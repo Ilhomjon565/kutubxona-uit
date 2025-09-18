@@ -40,11 +40,6 @@ const Header: React.FC = () => {
             <Link href="/categories" className="text-gray-700 hover:text-blue-600 transition-colors">
               Kategoriyalar
             </Link>
-            {isAdmin && (
-              <Link href="/admin" className="text-gray-700 hover:text-blue-600 transition-colors">
-                Admin Panel
-              </Link>
-            )}
           </nav>
 
           {/* User Menu */}
