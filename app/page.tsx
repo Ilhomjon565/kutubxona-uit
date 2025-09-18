@@ -1,103 +1,225 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import Layout from '@/components/Layout';
+import BookCard from '@/components/BookCard';
+import SearchBar from '@/components/SearchBar';
+import BookDetailModal from '@/components/BookDetailModal';
+import { Book, Category } from '@/types';
+import { booksApi, categoriesApi } from '@/lib/api';
+import { BookOpen, TrendingUp, Users, Award } from 'lucide-react';
+
+const HomePage: React.FC = () => {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showBookModal, setShowBookModal] = useState(false);
+
+  useEffect(() => {
+    loadBooks();
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadBooks();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedCategory]);
+
+  const loadBooks = async () => {
+    try {
+      setLoading(true);
+      const response = await booksApi.getAll({
+        search: searchTerm || undefined,
+        categoryId: selectedCategory || undefined,
+        limit: 12,
+      });
+      
+      if (response.message.includes('muvaffaqiyatli')) {
+        setBooks(response.books);
+      }
+    } catch (error) {
+      console.error('Error loading books:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await categoriesApi.getAll();
+      if (response.message === 'Kategoriyalar muvaffaqiyatli olingan') {
+        setCategories(response.categories);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  };
+
+  const handleViewBook = (book: Book) => {
+    setSelectedBook(book);
+    setShowBookModal(true);
+  };
+
+  const stats = [
+    {
+      icon: BookOpen,
+      label: 'Jami kitoblar',
+      value: '1,200+',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    },
+    {
+      icon: Users,
+      label: 'Foydalanuvchilar',
+      value: '500+',
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+    },
+    {
+      icon: TrendingUp,
+      label: 'Kategoriyalar',
+      value: '15+',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    },
+    {
+      icon: Award,
+      label: 'Yangi kitoblar',
+      value: '50+',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+    },
+  ];
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <Layout>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              UIT Kutubxona
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-blue-100">
+              Innovatsion Texnologiyalar Universiteti raqamli kutubxonasi
+            </p>
+            <p className="text-lg mb-8 text-blue-200 max-w-3xl mx-auto">
+              Zamonaviy ta'lim va innovatsion texnologiyalar asosida malakali mutaxassislar 
+              tayyorlash uchun keng kitoblar to'plami
+            </p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      {/* Search and Filter Section */}
+      <div className="bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Kitoblar to'plami
+            </h2>
+            <p className="text-lg text-gray-600">
+              O'zingizga kerakli kitobni toping va o'qing
+            </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto mb-8">
+            <SearchBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onFilterClick={() => setShowFilters(!showFilters)}
+            />
+          </div>
+
+          {/* Filters */}
+          {showFilters && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Filtrlar</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kategoriya
+                    </label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Barcha kategoriyalar</option>
+                      {categories.map((category) => (
+                        <option key={category._id} value={category._id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Books Grid */}
+      <div className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="aspect-[3/4] bg-gray-200 animate-pulse" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                    <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : books.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {books.map((book) => (
+                <BookCard
+                  key={book._id}
+                  book={book}
+                  onView={handleViewBook}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Kitoblar topilmadi
+              </h3>
+              <p className="text-gray-500">
+                Qidiruv so'rovingizga mos kitoblar topilmadi. Boshqa kalit so'zlar bilan qidiring.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Book Detail Modal */}
+      <BookDetailModal
+        book={selectedBook}
+        isOpen={showBookModal}
+        onClose={() => {
+          setShowBookModal(false);
+          setSelectedBook(null);
+        }}
+      />
+    </Layout>
   );
-}
+};
+
+export default HomePage;
