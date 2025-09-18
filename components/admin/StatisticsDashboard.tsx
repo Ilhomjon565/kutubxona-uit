@@ -62,8 +62,8 @@ const StatisticsDashboard: React.FC = () => {
 
     setStats({
       totalBooks: booksData.length,
-      availableBooks: booksData.filter(book => book.isAvailable).length,
-      unavailableBooks: booksData.filter(book => !book.isAvailable).length,
+      availableBooks: booksData.length, // All books are considered available
+      unavailableBooks: 0, // No unavailable books in current system
       totalCategories: categoriesData.length,
       booksThisYear,
       booksThisMonth,
@@ -74,7 +74,7 @@ const StatisticsDashboard: React.FC = () => {
     const categoryCounts: { [key: string]: number } = {};
     
     books.forEach(book => {
-      const categoryName = book.category?.name || 'Kategoriya yo\'q';
+      const categoryName = book.category || 'Kategoriya yo\'q';
       categoryCounts[categoryName] = (categoryCounts[categoryName] || 0) + 1;
     });
 
@@ -197,7 +197,7 @@ const StatisticsDashboard: React.FC = () => {
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {book.title}
                   </p>
-                  <p className="text-sm text-gray-500">{book.author}</p>
+                  <p className="text-sm text-gray-500">{book.category}</p>
                 </div>
                 <div className="ml-4 flex-shrink-0">
                   <span className="text-xs text-gray-500">

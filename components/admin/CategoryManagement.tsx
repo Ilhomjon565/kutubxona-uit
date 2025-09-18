@@ -195,7 +195,7 @@ const CategoryManagement: React.FC = () => {
               )}
               
               <div className="text-xs text-gray-500">
-                Yaratilgan: {new Date(category.createdAt).toLocaleDateString('uz-UZ')}
+                Yaratilgan: {category.createdAt ? new Date(category.createdAt).toLocaleDateString('uz-UZ') : 'Noma\'lum'}
               </div>
             </div>
           ))

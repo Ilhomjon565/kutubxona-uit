@@ -181,7 +181,7 @@ const ProfilePage: React.FC = () => {
                     <div className="flex justify-between">
                       <span>Ro'yxatdan o'tgan sana:</span>
                       <span className="font-medium">
-                        {new Date(user.createdAt).toLocaleDateString('uz-UZ')}
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('uz-UZ') : 'Noma\'lum'}
                       </span>
                     </div>
                   </div>

@@ -82,10 +82,10 @@ const EditBookPage: React.FC = () => {
       setSuccess('');
 
       const formData = new FormData();
-      formData.append('title', data.title);
-      formData.append('downloadLink', data.downloadLink);
-      formData.append('description', data.description);
-      formData.append('category', data.category);
+      formData.append('title', data.title || '');
+      formData.append('downloadLink', data.downloadLink || '');
+      formData.append('description', data.description || '');
+      formData.append('category', data.category || '');
       
       if (coverImageFile) {
         formData.append('image', coverImageFile);

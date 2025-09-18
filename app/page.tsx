@@ -37,7 +37,7 @@ const HomePage: React.FC = () => {
       setLoading(true);
       const response = await booksApi.getAll({
         search: searchTerm || undefined,
-        categoryId: selectedCategory || undefined,
+        category: selectedCategory || undefined,
         limit: 12,
       });
       
