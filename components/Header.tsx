@@ -49,45 +49,6 @@ const Header: React.FC = () => {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm text-gray-700">
-                    {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username}
-                  </span>
-                </div>
-                <Link
-                  href="/profile"
-                  className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
-                  title="Profil"
-                >
-                  <Settings className="h-5 w-5" />
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-500 hover:text-red-600 transition-colors"
-                  title="Chiqish"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Link
-                  href="/register"
-                  className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-                >
-                  Ro'yxatdan o'tish
-                </Link>
-                <Link
-                  href="/login"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Kirish
-                </Link>
-              </div>
-            )}
           </div>
 
           {/* Mobile menu button */}
