@@ -28,6 +28,9 @@ export function AdminGuard({ children }: AdminGuardProps) {
           if (!authenticated && pathname !== '/admin/login') {
             router.push("/admin/login")
           }
+        } else {
+          // Server-side da loading holatida qoldirish
+          setIsLoading(false)
         }
       } catch (error) {
         console.error('Auth check error:', error)
