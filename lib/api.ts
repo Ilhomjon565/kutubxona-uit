@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.kutubxona.uit.uz"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5002"
 
 export interface Book {
   id: string
