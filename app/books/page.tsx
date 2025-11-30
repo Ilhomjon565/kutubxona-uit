@@ -1,299 +1,190 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { BookOpen, Search, Download, Filter } from "lucide-react"
-import { getBooks, getCategories } from "@/lib/api"
-import { BookCardSkeleton } from "@/components/loading-spinner"
-import { Breadcrumb } from "@/components/breadcrumb"
-import type { Book, Category } from "@/lib/api"
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import BookCard from '@/components/BookCard';
+import { Search, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+interface Book {
+  _id: string;
+  title: string;
+  category: string;
+  image: string;
+  downloadUrl: string;
+  views: number;
+  downloads: number;
+}
 
 export default function BooksPage() {
-  const [books, setBooks] = useState<Book[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [filteredBooks, setFilteredBooks] = useState<Book[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-
-  const searchParams = useSearchParams()
+  const [books, setBooks] = useState<Book[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('Barchasi');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchBooks();
+  }, []);
 
   useEffect(() => {
-    const categoryFromUrl = searchParams.get("category")
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl)
-    }
-  }, [searchParams])
+    filterBooks();
+  }, [books, selectedCategory, search]);
 
-  useEffect(() => {
-    let filtered = Array.isArray(books) ? books : []
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.category.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    }
-
-    // Filter by category
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((book) => book.category === selectedCategory)
-    }
-
-    setFilteredBooks(filtered)
-  }, [books, searchTerm, selectedCategory])
-
-  const fetchData = async () => {
+  const fetchBooks = async () => {
     try {
-      const [booksData, categoriesData] = await Promise.all([getBooks(), getCategories()])
-      setBooks(Array.isArray(booksData) ? booksData : [])
-      setCategories(Array.isArray(categoriesData) ? categoriesData : [])
-      setError("")
-    } catch (err) {
-      console.error("Error fetching data:", err)
-      setBooks([])
-      setCategories([])
-      setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklashda xatolik")
-    } finally {
-      setIsLoading(false)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+      const { data } = await axios.get(`${apiUrl}/api/books`);
+      setBooks(data);
+      const uniqueCategories = ['Barchasi', ...new Set(data.map((book: Book) => book.category))];
+      setCategories(uniqueCategories as string[]);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      setLoading(false);
     }
-  }
+  };
 
-  const handleRetry = () => {
-    setIsLoading(true)
-    setError("")
-    fetchData()
-  }
+  const filterBooks = () => {
+    let result = books;
+    if (selectedCategory !== 'Barchasi') {
+      result = result.filter((book) => book.category === selectedCategory);
+    }
+    if (search) {
+      result = result.filter((book) =>
+        book.title.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    setFilteredBooks(result);
+  };
+
+  // Group books by category
+  const groupBooksByCategory = () => {
+    const grouped: { [key: string]: Book[] } = {};
+    
+    filteredBooks.forEach((book) => {
+      if (!grouped[book.category]) {
+        grouped[book.category] = [];
+      }
+      grouped[book.category].push(book);
+    });
+    
+    return grouped;
+  };
+
+  const groupedBooks = groupBooksByCategory();
 
   return (
-    <div className="bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Breadcrumb items={[{ label: "Kitoblar Katalogi" }]} />
+    <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-[#0056b3] selection:text-white">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0056b3]/5 to-[#00a8ff]/5 z-0" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-10 relative z-10">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-[#0056b3] hover:text-[#004494] mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Asosiy sahifaga qaytish</span>
+          </Link>
+          
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-center mb-6"
+          >
+            <span className="text-[#0056b3] font-bold text-xl tracking-widest uppercase">UIT Kutubxona</span>
+          </motion.div>
+          
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-7xl font-bold text-center mb-6 tracking-tight text-[#0f172a]"
+          >
+            Raqamli <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0056b3] to-[#00a8ff]">Kutubxona</span>
+          </motion.h1>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-2xl mx-auto relative"
+          >
+            <input
+              type="text"
+              placeholder="Kitoblarni qidirish..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0056b3]/20 shadow-xl shadow-[#0056b3]/5 text-lg placeholder-gray-400 transition-all"
+            />
+            <Search className="absolute left-4 top-4.5 h-6 w-6 text-gray-400" />
+          </motion.div>
         </div>
+      </div>
 
-        {/* Search and Filter Section */}
-        <div className="mb-8 space-y-6">
-          <div className="text-center animate-fade-in">
-            <h2 className="text-3xl sm:text-4xl font-bold text-primary mb-4 leading-tight animate-slide-up">
-              Kitoblar Katalogi
-            </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              Universitetimizning boy kutubxona fondidan kerakli kitoblarni toping va yuklab oling
-            </p>
-          </div>
-
-          <Card className="shadow-sm bg-white hover-lift animate-scale-in" style={{ animationDelay: '0.4s' }}>
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="p-1 bg-primary/10 rounded">
-                  <Search className="h-4 w-4 text-primary" />
-                </div>
-                Qidiruv va Filtr
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Kitoblarni nom, tavsif yoki kategoriya bo'yicha qidiring
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-3 flex-col sm:flex-row">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Kitob nomi, muallif yoki mavzu bo'yicha qidiring..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-11 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="sm:w-48">
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="h-11">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Kategoriya" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Barcha Kategoriyalar</SelectItem>
-                      {Array.isArray(categories) && categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {Array.isArray(categories) && categories.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">Tezkor filtr:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={selectedCategory === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory("all")}
-                      className="text-xs"
-                    >
-                      Barchasi
-                    </Button>
-                    {Array.isArray(categories) && categories.slice(0, 4).map((category) => (
-                      <Button
-                        key={category.id}
-                        variant={selectedCategory === category.name ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedCategory(category.name)}
-                        className="text-xs"
-                      >
-                        {category.name}
-                      </Button>
-                    ))}
-                    {Array.isArray(categories) && categories.length > 4 && (
-                      <Link href="/books/categories">
-                        <Button variant="ghost" size="sm" className="text-xs">
-                          +{categories.length - 4} ko'proq
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-8">
-            <AlertDescription className="flex items-center justify-between">
-              <span>{error}</span>
-              <Button variant="outline" size="sm" onClick={handleRetry}>
-                Qayta urinish
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Results Summary */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              {isLoading ? "Yuklanmoqda..." : `${Array.isArray(filteredBooks) ? filteredBooks.length : 0} ta kitob topildi`}
-              {selectedCategory !== "all" && ` "${selectedCategory}" kategoriyasida`}
-            </span>
-          </div>
-          {(searchTerm || selectedCategory !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchTerm("")
-                setSelectedCategory("all")
-              }}
+      {/* Filters */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+        <div className="flex flex-wrap justify-center gap-3">
+          {categories.map((category, index) => (
+            <motion.button
+              key={category}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.05 }}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                selectedCategory === category
+                  ? 'bg-[#0056b3] text-white shadow-lg shadow-[#0056b3]/30'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
             >
-              Filtrni tozalash
-            </Button>
-          )}
+              {category}
+            </motion.button>
+          ))}
         </div>
+      </div>
 
-        {/* Books Grid */}
-        {isLoading ? (
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {[...Array(8)].map((_, i) => (
-              <BookCardSkeleton key={i} />
-            ))}
+      {/* Book Grid - Grouped by Category */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0056b3]"></div>
           </div>
-        ) : Array.isArray(filteredBooks) && filteredBooks.length > 0 ? (
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.isArray(filteredBooks) && filteredBooks.map((book, index) => (
-              <Card key={book.id} className="group hover-lift hover-glow bg-white animate-scale-in" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="aspect-[3/4] relative overflow-hidden rounded-t-lg group-hover:rounded-xl transition-all duration-300">
-                  {book.image ? (
-                    <img
-                      src={`https://api.kutubxona.uit.uz/${book.image}` || "/placeholder.svg"}
-                      alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-50 flex items-center justify-center group-hover:bg-gradient-to-br group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-300">
-                      <BookOpen className="h-12 w-12 text-primary animate-bounce-gentle" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        ) : Object.keys(groupedBooks).length > 0 ? (
+          <div className="space-y-12">
+            {Object.entries(groupedBooks).map(([category, categoryBooks]) => (
+              <motion.div
+                key={category}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-[#0f172a]">{category}</h2>
+                  <span className="px-3 py-1 bg-[#0056b3]/10 text-[#0056b3] rounded-full text-sm font-medium">
+                    {categoryBooks.length} {categoryBooks.length === 1 ? 'kitob' : 'kitob'}
+                  </span>
                 </div>
-                <CardContent className="p-4 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground line-clamp-2 text-sm leading-tight group-hover:text-primary transition-colors duration-300">{book.title}</h3>
-                    </div>
-                    <Badge variant="secondary" className="text-xs bg-blue-50 text-primary hover:bg-primary hover:text-white transition-all duration-300">
-                      {book.category}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{book.description}</p>
-                  </div>
-                  <div className="mt-4">
-                    {book.downloadLink ? (
-                      <a href={book.downloadLink} target="_blank" rel="noopener noreferrer" className="block">
-                        <Button size="sm" className="w-full h-9 text-xs font-medium bg-primary hover:bg-primary/90 hover:shadow-lg hover:scale-105 transition-all duration-300">
-                          <Download className="h-3 w-3 mr-2" />
-                          Yuklab Olish
-                        </Button>
-                      </a>
-                    ) : (
-                      <Button size="sm" className="w-full h-9 text-xs" disabled>
-                        Mavjud Emas
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  {categoryBooks.map((book) => (
+                    <BookCard key={book._id} book={book} />
+                  ))}
+                </div>
+              </motion.div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <BookOpen className="mx-auto h-16 w-16 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold text-foreground">
-              {searchTerm || selectedCategory !== "all" ? "Kitob topilmadi" : "Kitoblar yo'q"}
-            </h3>
-            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-              {searchTerm || selectedCategory !== "all"
-                ? "Qidiruv shartlaringizga mos kitob topilmadi. Boshqa kalit so'zlar bilan qidiring yoki filtrni o'zgartiring."
-                : "Hozircha kutubxonada kitoblar mavjud emas."}
-            </p>
-            {(searchTerm || selectedCategory !== "all") && (
-              <div className="mt-6">
-                <Button
-                  onClick={() => {
-                    setSearchTerm("")
-                    setSelectedCategory("all")
-                  }}
-                >
-                  Barcha kitoblarni ko'rish
-                </Button>
-              </div>
-            )}
+          <div className="text-center py-20 text-gray-500 text-xl">
+            Siz qidirgan kitoblar topilmadi.
           </div>
         )}
-      </div>
+      </main>
     </div>
-  )
+  );
 }
+
+

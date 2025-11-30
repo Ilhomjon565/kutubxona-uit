@@ -1,236 +1,152 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { BookOpen, Tag, Plus, TrendingUp, Users, Download } from "lucide-react"
-import Link from "next/link"
-import { CardSkeleton } from "@/components/loading-spinner"
-import { AdminBreadcrumb } from "@/components/breadcrumb"
-import { getBooks, getCategories } from "@/lib/api"
-import type { Book, Category } from "@/lib/api"
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { Trash2, Edit, Plus } from 'lucide-react';
+import AdminSidebar from '@/components/AdminSidebar';
+
+interface Book {
+    _id: string;
+    title: string;
+    category: string;
+    views: number;
+    downloads: number;
+}
 
 export default function AdminDashboard() {
-  const [books, setBooks] = useState<Book[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [booksData, categoriesData] = await Promise.all([getBooks(), getCategories()])
-        setBooks(Array.isArray(booksData) ? booksData : [])
-        setCategories(Array.isArray(categoriesData) ? categoriesData : [])
-      } catch (err) {
-        console.error("Error fetching data:", err)
-        setBooks([])
-        setCategories([])
-        setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklashda xatolik")
-      } finally {
-        setIsLoading(false)
-      }
+    useEffect(() => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            router.push('/admin');
+            return;
+        }
+        fetchBooks();
+    }, [router]);
+
+    const fetchBooks = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const { data } = await axios.get(`${apiUrl}/api/books`);
+            setBooks(data);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching books:', error);
+            setLoading(false);
+        }
+    };
+
+    const deleteBook = async (id: string) => {
+        if (!confirm('Haqiqatan ham ushbu kitobni o\'chirmoqchimisiz?')) return;
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const token = localStorage.getItem('adminToken');
+            await axios.delete(`${apiUrl}/api/books/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            fetchBooks();
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            alert('Kitobni o\'chirishda xatolik yuz berdi');
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen bg-gray-50">
+                <AdminSidebar />
+                <div className="flex-1 flex justify-center items-center text-[#0056b3]">
+                    Yuklanmoqda...
+                </div>
+            </div>
+        );
     }
 
-    fetchData()
-  }, [])
+    const totalViews = books.reduce((acc, book) => acc + book.views, 0);
+    const totalDownloads = books.reduce((acc, book) => acc + book.downloads, 0);
 
-  const recentBooks = Array.isArray(books) ? books.slice(0, 5) : []
-
-  return (
-    <div className="space-y-8">
-        {/* Breadcrumb */}
-        <div>
-          <AdminBreadcrumb items={[{ label: "Dashboard" }]} />
-        </div>
-
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Kutubxona boshqaruv tizimi statistikasi
-          </p>
-        </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Statistics Cards */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Jami Kitoblar</CardTitle>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BookOpen className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? "..." : books.length}</div>
-              <p className="text-xs text-muted-foreground">Kutubxonadagi barcha kitoblar</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Kategoriyalar</CardTitle>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Tag className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? "..." : categories.length}</div>
-              <p className="text-xs text-muted-foreground">Mavjud kategoriyalar soni</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Faol Foydalanuvchilar</CardTitle>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">Bu oyda faol</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Yuklab Olishlar</CardTitle>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Download className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5,678</div>
-              <p className="text-xs text-muted-foreground">Bu oyda yuklab olingan</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Tezkor Amallar</CardTitle>
-              <CardDescription className="text-sm">
-                Kutubxonani boshqarish uchun tezkor havolalar
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Link href="/admin/books/add">
-                <Button className="w-full justify-start h-10">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Yangi Kitob Qo'shish
-                </Button>
-              </Link>
-              <Link href="/admin/books">
-                <Button variant="outline" className="w-full justify-start bg-transparent h-10">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Barcha Kitoblarni Ko'rish
-                </Button>
-              </Link>
-              <Link href="/admin/categories">
-                <Button variant="outline" className="w-full justify-start bg-transparent h-10">
-                  <Tag className="mr-2 h-4 w-4" />
-                  Kategoriyalarni Boshqarish
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">So'nggi Qo'shilgan Kitoblar</CardTitle>
-              <CardDescription className="text-sm">
-                Yaqinda qo'shilgan kitoblar ro'yxati
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <CardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : recentBooks.length > 0 ? (
-                <div className="space-y-3">
-                  {Array.isArray(recentBooks) && recentBooks.map((book) => (
-                    <div key={book.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex-shrink-0">
-                        <div className="h-10 w-8 bg-primary/10 rounded flex items-center justify-center">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{book.title}</p>
-                        <p className="text-xs text-muted-foreground">{book.category}</p>
-                      </div>
+    return (
+        <div className="flex min-h-screen bg-gray-50">
+            <AdminSidebar />
+            <div className="flex-1 p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-[#0056b3]">Boshqaruv Paneli</h1>
+                        <p className="text-gray-500 mt-2">Kitoblarni boshqarish va ko'rish</p>
                     </div>
-                  ))}
-                  {recentBooks.length === 5 && (
-                    <Link href="/admin/books">
-                      <Button variant="ghost" size="sm" className="w-full mt-2 h-8">
-                        Barchasini ko'rish
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-semibold text-foreground">Kitoblar yo'q</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Birinchi kitobni qo'shing</p>
-                  <div className="mt-6">
-                    <Link href="/admin/books/add">
-                      <Button size="sm" className="h-8">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Kitob Qo'shish
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Activity Overview */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="p-1 bg-primary/10 rounded">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
-              Faollik Ko'rsatkichlari
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Kutubxona foydalanish statistikasi
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-3">
-              <div className="text-center p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                <div className="text-2xl font-bold text-primary">89%</div>
-                <div className="text-sm text-muted-foreground">Kitoblar mavjudligi</div>
-              </div>
-              <div className="text-center p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                <div className="text-2xl font-bold text-secondary">156</div>
-                <div className="text-sm text-muted-foreground">Bu hafta yuklab olishlar</div>
-              </div>
-              <div className="text-center p-4 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
-                <div className="text-2xl font-bold text-accent">23</div>
-                <div className="text-sm text-muted-foreground">Yangi foydalanuvchilar</div>
-              </div>
+                {/* Analytics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                        <h3 className="text-gray-500 text-sm font-medium">Jami Kitoblar</h3>
+                        <p className="text-4xl font-bold text-[#0056b3] mt-2">{books.length}</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                        <h3 className="text-gray-500 text-sm font-medium">Jami Ko'rishlar</h3>
+                        <p className="text-4xl font-bold text-[#0056b3] mt-2">{totalViews}</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+                        <h3 className="text-gray-500 text-sm font-medium">Jami Yuklab Olishlar</h3>
+                        <p className="text-4xl font-bold text-[#0056b3] mt-2">{totalDownloads}</p>
+                    </div>
+                </div>
+
+                {/* Books Management */}
+                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h2 className="text-xl font-semibold text-gray-800">Kitoblar Boshqaruvi</h2>
+                        <button
+                            onClick={() => router.push('/admin/dashboard/create')}
+                            className="flex items-center px-4 py-2 bg-[#0056b3] text-white rounded-lg hover:bg-[#004494] transition-colors shadow-lg shadow-[#0056b3]/30"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Kitob Qo'shish
+                        </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sarlavha</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategoriya</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ko'rishlar</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yuklab Olishlar</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {books.map((book) => (
+                                    <tr key={book._id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.category}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.views}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.downloads}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button
+                                                onClick={() => router.push(`/admin/dashboard/edit/${book._id}`)}
+                                                className="text-[#0056b3] hover:text-[#004494] mr-4 transition-colors"
+                                            >
+                                                <Edit className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteBook(book._id)}
+                                                className="text-red-600 hover:text-red-800 transition-colors"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-  )
+        </div>
+    );
 }

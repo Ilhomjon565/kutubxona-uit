@@ -1,217 +1,247 @@
-"use client"
+'use client';
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { User, Save, Loader2 } from "lucide-react"
-import { getProfile, updateProfile } from "@/lib/api"
-import { getToken } from "@/lib/auth"
-import type { Profile } from "@/lib/api"
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import AdminSidebar from '@/components/AdminSidebar';
+import { User, Save, Lock } from 'lucide-react';
+
+interface ProfileData {
+    username: string;
+    currentPassword?: string;
+    newPassword?: string;
+    confirmPassword?: string;
+}
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    fullName: "",
-  })
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const router = useRouter();
+    const { register, handleSubmit, formState: { errors }, watch, reset } = useForm<ProfileData>();
 
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+    const newPassword = watch('newPassword');
 
-  const fetchProfile = async () => {
-    try {
-      const token = getToken()
-      if (!token) throw new Error("Token topilmadi")
+    useEffect(() => {
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            router.push('/admin');
+            return;
+        }
+        fetchProfile();
+    }, [router]);
 
-      const profileData = await getProfile(token)
-      setProfile(profileData)
-      setFormData({
-        username: profileData.username,
-        email: profileData.email || "",
-        fullName: profileData.fullName || "",
-      })
-    } catch (err) {
-      console.error("Error fetching profile:", err)
-      setError(err instanceof Error ? err.message : "Profil ma'lumotlarini yuklashda xatolik")
-    } finally {
-      setIsLoading(false)
+    const fetchProfile = async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const token = localStorage.getItem('adminToken');
+            const { data } = await axios.get(`${apiUrl}/api/auth/profile`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setProfile(data);
+            reset({ username: data.username });
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            setLoading(false);
+        }
+    };
+
+    const onSubmit = async (data: ProfileData) => {
+        setSaving(true);
+        setMessage(null);
+
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const token = localStorage.getItem('adminToken');
+
+            // Prepare update data
+            const updateData: any = {
+                username: data.username,
+            };
+
+            // Only include password fields if new password is provided
+            if (data.newPassword) {
+                updateData.currentPassword = data.currentPassword;
+                updateData.newPassword = data.newPassword;
+            }
+
+            const response = await axios.put(`${apiUrl}/api/auth/profile`, updateData, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            setMessage({ type: 'success', text: response.data.message || 'Profil muvaffaqiyatli yangilandi' });
+            setProfile(response.data);
+            
+            // Clear password fields
+            reset({
+                username: response.data.username,
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+            });
+        } catch (error: any) {
+            setMessage({
+                type: 'error',
+                text: error.response?.data?.message || 'Profilni yangilashda xatolik yuz berdi',
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen bg-gray-50">
+                <AdminSidebar />
+                <div className="flex-1 flex justify-center items-center text-[#0056b3]">
+                    Yuklanmoqda...
+                </div>
+            </div>
+        );
     }
-  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!profile) return
-
-    setIsSaving(true)
-    setError("")
-    setSuccess("")
-
-    try {
-      const token = getToken()
-      if (!token) throw new Error("Token topilmadi")
-
-      const updatedProfile = await updateProfile(formData, token)
-      setProfile(updatedProfile)
-      setSuccess("Profil muvaffaqiyatli yangilandi")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Profilni yangilashda xatolik")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }))
-  }
-
-  if (isLoading) {
     return (
-      <div className="space-y-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-2"></div>
-          <div className="h-4 bg-muted rounded w-1/2"></div>
+        <div className="flex min-h-screen bg-gray-50">
+            <AdminSidebar />
+            <div className="flex-1 p-8">
+                <div className="max-w-2xl mx-auto">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-[#0056b3]">Profil Sozlamalari</h1>
+                        <p className="text-gray-500 mt-2">Profil ma'lumotlarini yangilash</p>
+                    </div>
+
+                    {/* Message */}
+                    {message && (
+                        <div
+                            className={`mb-6 p-4 rounded-lg ${
+                                message.type === 'success'
+                                    ? 'bg-green-50 text-green-800 border border-green-200'
+                                    : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}
+                        >
+                            {message.text}
+                        </div>
+                    )}
+
+                    {/* Profile Form */}
+                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                            {/* Username Section */}
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                    <User className="w-4 h-4" />
+                                    Foydalanuvchi nomi
+                                </label>
+                                <input
+                                    {...register('username', {
+                                        required: 'Foydalanuvchi nomi kiritilishi shart',
+                                        minLength: {
+                                            value: 3,
+                                            message: 'Foydalanuvchi nomi kamida 3 belgi bo\'lishi kerak',
+                                        },
+                                    })}
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056b3] text-gray-900"
+                                    placeholder="Foydalanuvchi nomi"
+                                />
+                                {errors.username && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
+                                )}
+                            </div>
+
+                            {/* Password Change Section */}
+                            <div className="border-t border-gray-200 pt-6">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-4">
+                                    <Lock className="w-4 h-4" />
+                                    Parolni o'zgartirish (ixtiyoriy)
+                                </div>
+
+                                {/* Current Password */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Joriy parol
+                                    </label>
+                                    <input
+                                        type="password"
+                                        {...register('currentPassword', {
+                                            validate: (value) => {
+                                                const newPass = watch('newPassword');
+                                                if (newPass && !value) {
+                                                    return 'Yangi parol kiritilganda joriy parol kiritilishi shart';
+                                                }
+                                                return true;
+                                            },
+                                        })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056b3] text-gray-900"
+                                        placeholder="Joriy parol"
+                                    />
+                                    {errors.currentPassword && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
+                                    )}
+                                </div>
+
+                                {/* New Password */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Yangi parol
+                                    </label>
+                                    <input
+                                        type="password"
+                                        {...register('newPassword', {
+                                            minLength: {
+                                                value: 6,
+                                                message: 'Parol kamida 6 belgi bo\'lishi kerak',
+                                            },
+                                        })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056b3] text-gray-900"
+                                        placeholder="Yangi parol"
+                                    />
+                                    {errors.newPassword && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
+                                    )}
+                                </div>
+
+                                {/* Confirm Password */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Yangi parolni tasdiqlash
+                                    </label>
+                                    <input
+                                        type="password"
+                                        {...register('confirmPassword', {
+                                            validate: (value) => {
+                                                if (newPassword && value !== newPassword) {
+                                                    return 'Parollar mos kelmaydi';
+                                                }
+                                                return true;
+                                            },
+                                        })}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0056b3] text-gray-900"
+                                        placeholder="Yangi parolni qayta kiriting"
+                                    />
+                                    {errors.confirmPassword && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0056b3] text-white rounded-lg hover:bg-[#004494] transition-colors shadow-lg shadow-[#0056b3]/30 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                            >
+                                <Save className="w-5 h-5" />
+                                {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div className="animate-pulse">
-          <div className="h-64 bg-muted rounded"></div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Profil</h1>
-          <p className="text-muted-foreground">Shaxsiy ma'lumotlaringizni boshqaring</p>
-        </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="border-green-200 bg-green-50 text-green-800">
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Profile Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Shaxsiy Ma'lumotlar
-            </CardTitle>
-            <CardDescription>
-              Profil ma'lumotlaringizni yangilang
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Foydalanuvchi nomi</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={handleInputChange("username")}
-                    disabled={isSaving}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange("email")}
-                    disabled={isSaving}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="fullName">To'liq ism</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={handleInputChange("fullName")}
-                  disabled={isSaving}
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saqlanmoqda...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Saqlash
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Profile Info */}
-        {profile && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Profil Ma'lumotlari</CardTitle>
-              <CardDescription>
-                Joriy profil ma'lumotlari
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Foydalanuvchi ID</Label>
-                  <p className="text-sm">{profile.id}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Rol</Label>
-                  <p className="text-sm">{profile.role || "Admin"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Foydalanuvchi nomi</Label>
-                  <p className="text-sm">{profile.username}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                  <p className="text-sm">{profile.email || "Kiritilmagan"}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-sm font-medium text-muted-foreground">To'liq ism</Label>
-                  <p className="text-sm">{profile.fullName || "Kiritilmagan"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-  )
+    );
 }
+
+
