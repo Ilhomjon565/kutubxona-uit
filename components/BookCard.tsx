@@ -1,8 +1,9 @@
 'use client';
 
 import axios from 'axios';
-import { Download, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Download, Eye, BookOpen, Sparkles, Zap } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { useState } from 'react';
 
 interface Book {
     _id: string;
@@ -16,8 +17,17 @@ interface Book {
 
 export default function BookCard({ book }: { book: Book }) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+    const [isHovered, setIsHovered] = useState(false);
     
-    // Get image URL - if it starts with /uploads, prepend API URL
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+    
+    const mouseXSpring = useSpring(x, { stiffness: 500, damping: 100 });
+    const mouseYSpring = useSpring(y, { stiffness: 500, damping: 100 });
+    
+    const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7.5deg", "-7.5deg"]);
+    const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7.5deg", "7.5deg"]);
+
     const getImageUrl = () => {
         if (book.image.startsWith('http')) {
             return book.image;
@@ -38,53 +48,177 @@ export default function BookCard({ book }: { book: Book }) {
         }
     };
 
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const xPct = mouseX / width - 0.5;
+        const yPct = mouseY / height - 0.5;
+        x.set(xPct);
+        y.set(yPct);
+    };
+
+    const handleMouseLeave = () => {
+        x.set(0);
+        y.set(0);
+        setIsHovered(false);
+    };
+
     return (
         <motion.div
-            whileHover={{ y: -5 }}
-            className="group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
+            layout
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            onMouseEnter={() => setIsHovered(true)}
+            style={{
+                rotateX,
+                rotateY,
+                transformStyle: "preserve-3d",
+            }}
+            className="group relative flex flex-col bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-700 border border-gray-100/50 cursor-pointer perspective-1000"
         >
-            {/* Background Image */}
-            <img
-                src={getImageUrl()}
-                alt={book.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                onError={(e) => {
-                    // Fallback if image fails to load
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
-                }}
-            />
+            {/* Shimmer Effect */}
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent z-10 pointer-events-none" />
+            
+            {/* Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#0056b3] via-[#00a8ff] to-[#0056b3] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10" />
 
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0056b3]/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            {/* Image Container with Parallax */}
+            <div className="relative aspect-[3/4] overflow-hidden">
+                <motion.img
+                    src={getImageUrl()}
+                    alt={book.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                        scale: isHovered ? 1.15 : 1,
+                        rotateX: useTransform(mouseYSpring, [-0.5, 0.5], ["-5deg", "5deg"]),
+                    }}
+                    transition={{ duration: 0.7, ease: "easeOut" }}
+                    onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
+                    }}
+                />
+                
+                {/* Animated Gradient Overlay */}
+                <motion.div 
+                    className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isHovered ? 1 : 0.3 }}
+                    transition={{ duration: 0.4 }}
+                />
 
-            {/* Content */}
-            <div className="absolute inset-0 p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                    <span className="inline-block px-2 py-1 mb-2 text-xs font-medium text-white bg-[#0056b3] rounded-full">
+                {/* Floating Particles Effect */}
+                {isHovered && (
+                    <>
+                        {[...Array(6)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                className="absolute w-2 h-2 bg-white/40 rounded-full"
+                                initial={{
+                                    x: Math.random() * 100 + '%',
+                                    y: '100%',
+                                    opacity: 0,
+                                }}
+                                animate={{
+                                    y: '-20%',
+                                    opacity: [0, 1, 0],
+                                    scale: [0, 1, 0],
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    delay: i * 0.2,
+                                    repeat: Infinity,
+                                    ease: "easeOut",
+                                }}
+                                style={{
+                                    left: `${Math.random() * 100}%`,
+                                }}
+                            />
+                        ))}
+                    </>
+                )}
+
+                {/* Category Badge with Animation */}
+                <motion.div 
+                    className="absolute top-3 left-3 z-20"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <motion.span 
+                        className="px-3 py-1.5 text-[10px] font-bold text-white bg-gradient-to-r from-[#0056b3] to-[#00a8ff] backdrop-blur-md rounded-full uppercase tracking-wider shadow-lg"
+                        whileHover={{ scale: 1.1 }}
+                    >
                         {book.category}
-                    </span>
-                    <h3 className="text-lg font-bold text-white mb-1 leading-tight">{book.title}</h3>
+                    </motion.span>
+                </motion.div>
 
-                    <div className="flex items-center justify-between mt-3 text-white/90 text-sm">
-                        <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1">
-                                <Eye className="w-4 h-4" /> {book.views}
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <Download className="w-4 h-4" /> {book.downloads}
-                            </span>
-                        </div>
+                {/* Quick Action Buttons with Stagger Animation */}
+                <motion.div 
+                    className="absolute inset-0 flex items-center justify-center gap-4 z-20"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ 
+                        opacity: isHovered ? 1 : 0,
+                        scale: isHovered ? 1 : 0.8,
+                    }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <motion.button
+                        onClick={handleDownload}
+                        className="p-4 bg-white text-[#0056b3] rounded-full shadow-2xl"
+                        whileHover={{ scale: 1.15, rotate: 360 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                        <Download className="w-6 h-6" />
+                    </motion.button>
+                </motion.div>
+            </div>
 
-                        <button
-                            onClick={handleDownload}
-                            className="p-2 bg-white text-[#0056b3] rounded-full hover:bg-gray-100 transition-colors"
-                            title="Yuklab olish"
+            {/* Content Section with 3D Effect */}
+            <div className="p-5 flex flex-col flex-grow bg-gradient-to-b from-white to-gray-50/50" style={{ transform: "translateZ(20px)" }}>
+                <motion.h3 
+                    className="text-sm md:text-base font-bold text-gray-900 mb-3 line-clamp-2 leading-tight"
+                    animate={{ color: isHovered ? '#0056b3' : '#111827' }}
+                    transition={{ duration: 0.3 }}
+                >
+                    {book.title}
+                </motion.h3>
+
+                <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-4">
+                        <motion.div 
+                            className="flex items-center gap-1.5 text-[11px] text-gray-500 font-semibold"
+                            whileHover={{ scale: 1.1, color: '#00a8ff' }}
                         >
-                            <Download className="w-5 h-5" />
-                        </button>
+                            <Eye className="w-4 h-4 text-[#00a8ff]" />
+                            <span>{book.views}</span>
+                        </motion.div>
+                        <motion.div 
+                            className="flex items-center gap-1.5 text-[11px] text-gray-500 font-semibold"
+                            whileHover={{ scale: 1.1, color: '#0056b3' }}
+                        >
+                            <Download className="w-4 h-4 text-[#0056b3]" />
+                            <span>{book.downloads}</span>
+                        </motion.div>
                     </div>
+                    <motion.div
+                        animate={{ rotate: isHovered ? 360 : 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                    >
+                        <BookOpen className="w-5 h-5 text-gray-300" />
+                    </motion.div>
                 </div>
             </div>
+
+            {/* Decorative Corner Accent */}
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#0056b3]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </motion.div>
     );
 }

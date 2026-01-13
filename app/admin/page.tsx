@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { User, Lock, LogIn, AlertCircle } from 'lucide-react';
 
 export default function AdminLogin() {
+    // Prevent indexing
+    useEffect(() => {
+        // Add noindex meta tag
+        const metaRobots = document.createElement('meta');
+        metaRobots.name = 'robots';
+        metaRobots.content = 'noindex, nofollow';
+        document.head.appendChild(metaRobots);
+
+        return () => {
+            document.head.removeChild(metaRobots);
+        };
+    }, []);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
