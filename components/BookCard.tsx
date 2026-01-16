@@ -1,9 +1,11 @@
 'use client';
 
 import axios from 'axios';
-import { Download, Eye, BookOpen, Sparkles, Zap } from 'lucide-react';
+import { Download, Eye, BookOpen } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 interface Book {
     _id: string;
@@ -15,30 +17,32 @@ interface Book {
     downloads: number;
 }
 
-export default function BookCard({ book }: { book: Book }) {
+const BookCard = memo(function BookCard({ book }: { book: Book }) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
     const [isHovered, setIsHovered] = useState(false);
+    const [imageError, setImageError] = useState(false);
     
     const x = useMotionValue(0);
     const y = useMotionValue(0);
     
-    const mouseXSpring = useSpring(x, { stiffness: 500, damping: 100 });
-    const mouseYSpring = useSpring(y, { stiffness: 500, damping: 100 });
+    const mouseXSpring = useSpring(x, { stiffness: 400, damping: 80 });
+    const mouseYSpring = useSpring(y, { stiffness: 400, damping: 80 });
     
-    const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7.5deg", "-7.5deg"]);
-    const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7.5deg", "7.5deg"]);
+    const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["5deg", "-5deg"]);
+    const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-5deg", "5deg"]);
 
-    const getImageUrl = () => {
+    const getImageUrl = useCallback(() => {
         if (book.image.startsWith('http')) {
             return book.image;
         } else if (book.image.startsWith('/uploads')) {
             return `${apiUrl}${book.image}`;
         }
         return book.image;
-    };
+    }, [book.image, apiUrl]);
 
-    const handleDownload = async (e: React.MouseEvent) => {
+    const handleDownload = useCallback(async (e: React.MouseEvent) => {
         e.stopPropagation();
+        e.preventDefault();
         try {
             await axios.post(`${apiUrl}/api/books/${book._id}/download`);
             window.open(book.downloadUrl, '_blank');
@@ -46,7 +50,7 @@ export default function BookCard({ book }: { book: Book }) {
             console.error('Error tracking download:', error);
             window.open(book.downloadUrl, '_blank');
         }
-    };
+    }, [book._id, book.downloadUrl, apiUrl]);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -67,6 +71,7 @@ export default function BookCard({ book }: { book: Book }) {
     };
 
     return (
+        <Link href={`/books/${book._id}`}>
         <motion.div
             layout
             initial={{ opacity: 0, y: 30, scale: 0.9 }}
@@ -90,20 +95,27 @@ export default function BookCard({ book }: { book: Book }) {
             <div className="absolute -inset-1 bg-gradient-to-r from-[#0056b3] via-[#00a8ff] to-[#0056b3] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10" />
 
             {/* Image Container with Parallax */}
-            <div className="relative aspect-[3/4] overflow-hidden">
-                <motion.img
-                    src={getImageUrl()}
-                    alt={book.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{
-                        scale: isHovered ? 1.15 : 1,
-                        rotateX: useTransform(mouseYSpring, [-0.5, 0.5], ["-5deg", "5deg"]),
-                    }}
-                    transition={{ duration: 0.7, ease: "easeOut" }}
-                    onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x400?text=No+Image';
-                    }}
-                />
+            <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                {!imageError ? (
+                    <Image
+                        src={getImageUrl()}
+                        alt={book.title}
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+                        className="object-cover transition-transform duration-700 ease-out will-change-transform"
+                        style={{
+                            transform: isHovered ? 'scale(1.1)' : 'scale(1)',
+                        }}
+                        onError={() => setImageError(true)}
+                        loading="lazy"
+                        quality={85}
+                        unoptimized={book.image.startsWith('http') && !book.image.includes('api.kutubxona.uit.uz')}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                        <BookOpen className="w-16 h-16 text-gray-400" />
+                    </div>
+                )}
                 
                 {/* Animated Gradient Overlay */}
                 <motion.div 
@@ -113,36 +125,6 @@ export default function BookCard({ book }: { book: Book }) {
                     transition={{ duration: 0.4 }}
                 />
 
-                {/* Floating Particles Effect */}
-                {isHovered && (
-                    <>
-                        {[...Array(6)].map((_, i) => (
-                            <motion.div
-                                key={i}
-                                className="absolute w-2 h-2 bg-white/40 rounded-full"
-                                initial={{
-                                    x: Math.random() * 100 + '%',
-                                    y: '100%',
-                                    opacity: 0,
-                                }}
-                                animate={{
-                                    y: '-20%',
-                                    opacity: [0, 1, 0],
-                                    scale: [0, 1, 0],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    delay: i * 0.2,
-                                    repeat: Infinity,
-                                    ease: "easeOut",
-                                }}
-                                style={{
-                                    left: `${Math.random() * 100}%`,
-                                }}
-                            />
-                        ))}
-                    </>
-                )}
 
                 {/* Category Badge with Animation */}
                 <motion.div 
@@ -170,7 +152,11 @@ export default function BookCard({ book }: { book: Book }) {
                     transition={{ duration: 0.3 }}
                 >
                     <motion.button
-                        onClick={handleDownload}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDownload(e);
+                        }}
                         className="p-4 bg-white text-[#0056b3] rounded-full shadow-2xl"
                         whileHover={{ scale: 1.15, rotate: 360 }}
                         whileTap={{ scale: 0.9 }}
@@ -218,7 +204,10 @@ export default function BookCard({ book }: { book: Book }) {
             </div>
 
             {/* Decorative Corner Accent */}
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#0056b3]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#0056b3]/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         </motion.div>
+        </Link>
     );
-}
+});
+
+export default BookCard;

@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Book, Info, Phone, Mail, MapPin, Facebook, Instagram, Send, ExternalLink, Library } from "lucide-react";
+import Navigation from "@/components/Navigation";
+import Logo from "@/components/Logo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,11 +24,63 @@ export const metadata: Metadata = {
     default: "UIT Kutubxona - University of Innovation Technologies Raqamli Kutubxonasi",
     template: "%s | UIT Kutubxona"
   },
-  description: "University of Innovation Technologies (UIT) raqamli kutubxonasi. Qoraqalpog'iston Respublikasidagi birinchi nodavlat oliy ta'lim muassasasi.",
-  keywords: ["UIT kutubxona", "raqamli kutubxona", "elektron kitoblar", "Nukus", "Qoraqalpog'iston"],
+  description: "University of Innovation Technologies (UIT) raqamli kutubxonasi. Qoraqalpog'iston Respublikasidagi birinchi nodavlat oliy ta'lim muassasasi. Elektron kitoblar, darsliklar, ilmiy adabiyotlar va badiiy asarlar.",
+  keywords: [
+    "UIT kutubxona",
+    "raqamli kutubxona",
+    "elektron kitoblar",
+    "Nukus",
+    "Qoraqalpog'iston",
+    "University of Innovation Technologies",
+    "UIT Nukus",
+    "elektron darsliklar",
+    "ilmiy adabiyotlar",
+    "badiiy kitoblar",
+    "kutubxona",
+    "kitoblar",
+    "yuklab olish",
+    "PDF kitoblar",
+    "raqamli adabiyotlar",
+    "ta'lim resurslari",
+    "o'zbekiston kutubxonasi",
+    "nodavlat universitet",
+    "innovatsion texnologiyalar",
+    "bilimlar markazi",
+    "o'qish",
+    "kitob o'qish",
+    "adabiyotlar",
+    "darsliklar",
+    "ilmiy kitoblar",
+    "universitet kutubxonasi"
+  ],
+  openGraph: {
+    type: "website",
+    locale: "uz_UZ",
+    url: siteUrl,
+    siteName: "UIT Kutubxona",
+    title: "UIT Kutubxona - Raqamli Kutubxona",
+    description: "University of Innovation Technologies raqamli kutubxonasi. Elektron kitoblar, darsliklar va ilmiy adabiyotlar.",
+    images: [
+      {
+        url: `${siteUrl}/logo.png`,
+        width: 1200,
+        height: 630,
+        alt: "UIT Kutubxona Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "UIT Kutubxona - Raqamli Kutubxona",
+    description: "University of Innovation Technologies raqamli kutubxonasi",
+    images: [`${siteUrl}/logo.png`],
+  },
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
+  },
+  alternates: {
+    canonical: siteUrl,
   },
 };
 
@@ -39,48 +93,7 @@ export default function RootLayout({
     <html lang="uz" className="scroll-smooth">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#fcfdfe]`}>
         {/* Navigation with Enhanced Animations */}
-        <nav className="sticky top-0 z-50 glass-enhanced border-b border-gray-100/50 backdrop-blur-xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <Link href="/" className="flex items-center gap-2 group magnetic">
-                <div className="bg-gradient-to-br from-[#0056b3] to-[#00a8ff] p-2 rounded-lg shadow-lg group-hover:rotate-12 group-hover:scale-110 transition-all duration-500">
-                  <Library className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-[#0f172a] leading-tight group-hover:text-[#0056b3] transition-colors">UIT</span>
-                  <span className="text-[10px] uppercase tracking-widest text-[#0056b3] font-bold">Kutubxona</span>
-                </div>
-              </Link>
-              
-              <div className="hidden md:flex items-center gap-8">
-                <Link 
-                  href="/" 
-                  className="text-sm font-medium text-gray-600 hover:text-[#0056b3] transition-all relative group"
-                >
-                  Asosiy
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0056b3] group-hover:w-full transition-all duration-300" />
-                </Link>
-                <Link 
-                  href="/about" 
-                  className="text-sm font-medium text-gray-600 hover:text-[#0056b3] transition-all relative group"
-                >
-                  Biz haqimizda
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0056b3] group-hover:w-full transition-all duration-300" />
-                </Link>
-                <a 
-                  href="https://uit.uz" 
-                  target="_blank" 
-                  className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-[#0056b3] transition-all relative group"
-                >
-                  Universitet 
-                  <ExternalLink className="w-3 h-3 group-hover:rotate-45 transition-transform" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0056b3] group-hover:w-full transition-all duration-300" />
-                </a>
-              </div>
-
-            </div>
-          </div>
-        </nav>
+        <Navigation />
 
         {/* Main Content */}
         <main className="flex-grow">
@@ -93,9 +106,15 @@ export default function RootLayout({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
               {/* Brand Section */}
               <div className="space-y-6">
-                <div className="flex items-center gap-2">
-                  <div className="bg-white p-2 rounded-lg">
-                    <Library className="w-6 h-6 text-[#0056b3]" />
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#0056b3] to-[#00a8ff] rounded-xl blur-md opacity-30" />
+                    <Logo 
+                      src="/logo.png"
+                      className="relative w-12 h-12 object-contain drop-shadow-lg"
+                      width={48}
+                      height={48}
+                    />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xl font-bold leading-tight">UIT</span>
@@ -149,7 +168,12 @@ export default function RootLayout({
 
               {/* University Logo/Badge */}
               <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/10">
-                <img src="/logo.png" alt="UIT Logo" className="w-24 h-24 mb-4 object-contain" />
+                <Logo 
+                  src="/logo.png"
+                  className="w-24 h-24 mb-4 object-contain" 
+                  width={96}
+                  height={96}
+                />
                 <span className="text-xs text-center text-gray-400 uppercase tracking-tighter">University of Innovation Technologies</span>
               </div>
             </div>

@@ -90,18 +90,35 @@ body {
   animation: shimmer 2s infinite;
 }
 
-/* Floating Animation */
+/* Floating Animation - Optimized */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-20px);
+    transform: translateY(-15px);
   }
 }
 
-.float {
-  animation: float 6s ease-in-out infinite;
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Fade In Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
 }
 
 /* Pulse Glow */
@@ -242,4 +259,79 @@ html {
   transform: scale(4);
   opacity: 0;
   transition: 0s;
+}
+
+/* Enhanced Gradient Backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #0056b3 0%, #00a8ff 100%);
+}
+
+.bg-gradient-secondary {
+  background: linear-gradient(135deg, #004494 0%, #0056b3 100%);
+}
+
+/* Performance Optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU Acceleration for Animations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Smooth Transitions - Optimized */
+.transition-smooth {
+  transition-property: transform, opacity, background-color, border-color, color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Enhanced Card Hover Effects */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+  will-change: transform;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 86, 179, 0.12);
+}
+
+/* Text Selection */
+::selection {
+  background-color: #0056b3;
+  color: white;
+}
+
+::-moz-selection {
+  background-color: #0056b3;
+  color: white;
+}
+
+/* Reduce Motion for Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize Image Rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Content Visibility for Performance */
+.content-visibility-auto {
+  content-visibility: auto;
 }
