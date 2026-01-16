@@ -47,8 +47,10 @@ export default function AnalyticsPage() {
     const fetchBooks = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-            const { data } = await axios.get(`${apiUrl}/api/books`);
-            setBooks(data);
+            const { data } = await axios.get(`${apiUrl}/api/books?limit=1000`);
+            // Handle pagination response
+            const booksData = Array.isArray(data) ? data : (data.books || []);
+            setBooks(booksData);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching books:', error);
@@ -58,14 +60,19 @@ export default function AnalyticsPage() {
 
     // Prepare data for charts
     const categoryData = () => {
+        if (!Array.isArray(books) || books.length === 0) {
+            return [];
+        }
+        
         const categoryMap: { [key: string]: { views: number; downloads: number; count: number } } = {};
         
         books.forEach((book) => {
+            if (!book || !book.category) return;
             if (!categoryMap[book.category]) {
                 categoryMap[book.category] = { views: 0, downloads: 0, count: 0 };
             }
-            categoryMap[book.category].views += book.views;
-            categoryMap[book.category].downloads += book.downloads;
+            categoryMap[book.category].views += book.views || 0;
+            categoryMap[book.category].downloads += book.downloads || 0;
             categoryMap[book.category].count += 1;
         });
 
@@ -78,13 +85,17 @@ export default function AnalyticsPage() {
     };
 
     const topBooksData = () => {
+        if (!Array.isArray(books) || books.length === 0) {
+            return [];
+        }
         return [...books]
-            .sort((a, b) => (b.views + b.downloads) - (a.views + a.downloads))
+            .filter(book => book && book.title)
+            .sort((a, b) => ((b.views || 0) + (b.downloads || 0)) - ((a.views || 0) + (a.downloads || 0)))
             .slice(0, 10)
             .map((book) => ({
                 name: book.title.length > 20 ? book.title.substring(0, 20) + '...' : book.title,
-                views: book.views,
-                downloads: book.downloads,
+                views: book.views || 0,
+                downloads: book.downloads || 0,
             }));
     };
 
@@ -95,9 +106,9 @@ export default function AnalyticsPage() {
         }));
     };
 
-    const totalViews = books.reduce((acc, book) => acc + book.views, 0);
-    const totalDownloads = books.reduce((acc, book) => acc + book.downloads, 0);
-    const totalBooks = books.length;
+    const totalViews = Array.isArray(books) ? books.reduce((acc, book) => acc + (book.views || 0), 0) : 0;
+    const totalDownloads = Array.isArray(books) ? books.reduce((acc, book) => acc + (book.downloads || 0), 0) : 0;
+    const totalBooks = Array.isArray(books) ? books.length : 0;
 
     if (loading) {
         return (

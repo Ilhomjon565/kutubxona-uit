@@ -42,11 +42,22 @@ export function useBookNotifications() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
         const { data } = await axios.get(`${apiUrl}/api/books?limit=1&page=1`);
         const books = Array.isArray(data) ? data : (data.books || []);
-        if (books.length > 0) {
+        if (books.length > 0 && books[0]._id) {
           setLastBookId(books[0]._id);
+          // Store in localStorage for persistence
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('lastBookId', books[0]._id);
+          }
         }
       } catch (error) {
         console.error('Error initializing last book:', error);
+        // Try to get from localStorage
+        if (typeof window !== 'undefined') {
+          const stored = localStorage.getItem('lastBookId');
+          if (stored) {
+            setLastBookId(stored);
+          }
+        }
       }
     };
 
@@ -69,9 +80,20 @@ export function useBookNotifications() {
           const latestBook = books[0] as Book;
           
           // Check if this is a new book
-          if (latestBook._id !== lastBookId) {
+          if (latestBook._id && latestBook._id !== lastBookId && lastBookId !== null) {
+            console.log('New book detected:', latestBook.title);
             setLastBookId(latestBook._id);
+            // Store in localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lastBookId', latestBook._id);
+            }
             showNotification(latestBook);
+          } else if (lastBookId === null && latestBook._id) {
+            // First time initialization
+            setLastBookId(latestBook._id);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('lastBookId', latestBook._id);
+            }
           }
         }
       } catch (error) {
@@ -79,8 +101,8 @@ export function useBookNotifications() {
       }
     };
 
-    // Check every 60 seconds (1 minute) for new books
-    intervalRef.current = setInterval(checkForNewBooks, 60000);
+    // Check every 30 seconds for new books
+    intervalRef.current = setInterval(checkForNewBooks, 30000);
 
     return () => {
       if (intervalRef.current) {

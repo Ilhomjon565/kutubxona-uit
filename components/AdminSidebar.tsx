@@ -25,11 +25,6 @@ export default function AdminSidebar() {
             path: '/admin/analytics',
         },
         {
-            name: 'Kitoblar',
-            icon: <BookOpen className="w-5 h-5" />,
-            path: '/admin/dashboard',
-        },
-        {
             name: 'Profil',
             icon: <User className="w-5 h-5" />,
             path: '/admin/profile',
