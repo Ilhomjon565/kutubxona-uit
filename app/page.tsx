@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import BookCard from '@/components/BookCard';
-import { Search, BookOpen, ArrowRight, TrendingUp, Clock, Library, Sparkles, ChevronDown, Grid3x3, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, BookOpen, ArrowRight, TrendingUp, Clock, Library, Sparkles, ChevronDown, Grid3x3, List, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useBookNotifications } from '@/hooks/useBookNotifications';
 
 interface Book {
   _id: string;
@@ -40,6 +41,9 @@ export default function Home() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const itemsPerPage = 10;
   const hasTrackedViews = useRef(false);
+  
+  // Book notifications hook
+  const { notificationPermission, requestPermission } = useBookNotifications();
 
   useEffect(() => {
     fetchBooks();
@@ -251,19 +255,43 @@ export default function Home() {
                   className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#0056b3]/20 text-gray-900 shadow-2xl transition-all"
                 />
               </motion.div>
-              <motion.button
-                type="submit"
-                className="px-8 py-4 bg-gradient-to-r from-[#0056b3] to-[#00a8ff] hover:from-[#004494] hover:to-[#0099e6] text-white rounded-2xl font-bold shadow-xl shadow-[#0056b3]/20 transition-all flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 86, 179, 0.4)" }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.span
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+              <div className="flex gap-3">
+                {notificationPermission !== 'granted' && typeof window !== 'undefined' && 'Notification' in window && (
+                  <motion.button
+                    type="button"
+                    onClick={requestPermission}
+                    className="px-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Yangi kitoblar haqida xabar olish"
+                  >
+                    <Bell className="w-5 h-5" />
+                  </motion.button>
+                )}
+                {notificationPermission === 'granted' && (
+                  <motion.div
+                    className="px-4 py-4 bg-green-500/20 backdrop-blur-md border border-green-500/30 text-white rounded-2xl flex items-center justify-center gap-2"
+                    title="Bildirishnomalar yoqilgan"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                  >
+                    <Bell className="w-5 h-5 text-green-300" />
+                  </motion.div>
+                )}
+                <motion.button
+                  type="submit"
+                  className="px-8 py-4 bg-gradient-to-r from-[#0056b3] to-[#00a8ff] hover:from-[#004494] hover:to-[#0099e6] text-white rounded-2xl font-bold shadow-xl shadow-[#0056b3]/20 transition-all flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(0, 86, 179, 0.4)" }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Qidirish
-                </motion.span>
-              </motion.button>
+                  <motion.span
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    Qidirish
+                  </motion.span>
+                </motion.button>
+              </div>
             </form>
 
             <motion.div
