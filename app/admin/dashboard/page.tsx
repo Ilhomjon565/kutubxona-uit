@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Trash2, Edit, Plus, BookOpen, Eye, Download, 
     TrendingUp, AlertCircle, RefreshCw, Search,
-    FileText, Calendar, BarChart3, Loader2
+    FileText, Calendar, BarChart3, Loader2,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import AdminSidebar from '@/components/AdminSidebar';
 
@@ -37,6 +38,10 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
     const [refreshing, setRefreshing] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState<any>(null);
+    const [allBooksForStats, setAllBooksForStats] = useState<Book[]>([]);
+    const itemsPerPage = 10;
     const router = useRouter();
 
     // Error logging function
@@ -77,16 +82,8 @@ export default function AdminDashboard() {
     }, [router]);
 
     useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setFilteredBooks(books);
-        } else {
-            const filtered = books.filter(book =>
-                book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                book.category.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setFilteredBooks(filtered);
-        }
-    }, [searchQuery, books]);
+        fetchBooks();
+    }, [currentPage, searchQuery]);
 
     const fetchBooks = async () => {
         setLoading(true);
@@ -95,13 +92,32 @@ export default function AdminDashboard() {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
             logError('info', 'Fetching books from API', { url: `${apiUrl}/api/books` });
             
-            const { data } = await axios.get(`${apiUrl}/api/books`, {
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: itemsPerPage.toString(),
+            });
+            
+            if (searchQuery.trim()) {
+                params.append('search', searchQuery.trim());
+            }
+            
+            const { data } = await axios.get(`${apiUrl}/api/books?${params.toString()}`, {
                 timeout: 10000,
             });
             
-            logError('info', `Successfully fetched ${data.length} books`);
-            setBooks(data);
-            setFilteredBooks(data);
+            if (data.pagination) {
+                const booksData = data.books || [];
+                logError('info', `Successfully fetched ${booksData.length} books (page ${currentPage})`);
+                setBooks(booksData);
+                setFilteredBooks(booksData);
+                setPagination(data.pagination);
+            } else {
+                const booksData = Array.isArray(data) ? data : (data.books || []);
+                logError('info', `Successfully fetched ${booksData.length} books`);
+                setBooks(booksData);
+                setFilteredBooks(booksData);
+                setPagination(null);
+            }
             setLoading(false);
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || 
@@ -124,6 +140,11 @@ export default function AdminDashboard() {
         setRefreshing(true);
         await fetchBooks();
         setRefreshing(false);
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const deleteBook = async (id: string, title: string) => {
@@ -161,12 +182,27 @@ export default function AdminDashboard() {
         }
     };
 
-    // Calculate statistics
-    const totalViews = books.reduce((acc, book) => acc + book.views, 0);
-    const totalDownloads = books.reduce((acc, book) => acc + book.downloads, 0);
-    const avgViews = books.length > 0 ? Math.round(totalViews / books.length) : 0;
-    const avgDownloads = books.length > 0 ? Math.round(totalDownloads / books.length) : 0;
-    const categories = [...new Set(books.map(book => book.category))].length;
+    // Fetch all books for statistics
+    useEffect(() => {
+        const fetchAllForStats = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+                const { data } = await axios.get(`${apiUrl}/api/books?limit=1000`);
+                const booksData = Array.isArray(data) ? data : (data.books || []);
+                setAllBooksForStats(booksData);
+            } catch (error) {
+                console.error('Error fetching all books for stats:', error);
+            }
+        };
+        fetchAllForStats();
+    }, []);
+
+    const totalViews = allBooksForStats.reduce((acc, book) => acc + book.views, 0);
+    const totalDownloads = allBooksForStats.reduce((acc, book) => acc + book.downloads, 0);
+    const avgViews = allBooksForStats.length > 0 ? Math.round(totalViews / allBooksForStats.length) : 0;
+    const avgDownloads = allBooksForStats.length > 0 ? Math.round(totalDownloads / allBooksForStats.length) : 0;
+    const categories = [...new Set(allBooksForStats.map(book => book.category))].length;
+    const totalBooks = allBooksForStats.length;
 
     // Top performing books
     const topBooks = [...books]
@@ -264,7 +300,7 @@ export default function AdminDashboard() {
                                 <TrendingUp className="w-5 h-5 text-green-500" />
                             </div>
                             <h3 className="text-gray-500 text-sm font-medium mb-1">Jami Kitoblar</h3>
-                            <p className="text-3xl font-bold text-gray-900">{books.length}</p>
+                            <p className="text-3xl font-bold text-gray-900">{totalBooks || books.length}</p>
                             <p className="text-xs text-gray-400 mt-2">{categories} ta kategoriya</p>
                         </motion.div>
 
@@ -460,6 +496,64 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination */}
+                        {pagination && pagination.totalPages > 1 && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex items-center justify-between px-6 py-4 border-t border-gray-100"
+                            >
+                                <div className="text-sm text-gray-600">
+                                    {pagination.totalItems} ta kitobdan {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, pagination.totalItems)} tasi ko'rsatilmoqda
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handlePageChange(currentPage - 1)}
+                                        disabled={!pagination.hasPrevPage}
+                                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(pagination.totalPages)].map((_, i) => {
+                                            const page = i + 1;
+                                            if (
+                                                page === 1 ||
+                                                page === pagination.totalPages ||
+                                                (page >= currentPage - 1 && page <= currentPage + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => handlePageChange(page)}
+                                                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                                                            currentPage === page
+                                                                ? 'bg-gradient-to-r from-[#0056b3] to-[#00a8ff] text-white shadow-lg'
+                                                                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                );
+                                            } else if (page === currentPage - 2 || page === currentPage + 2) {
+                                                return <span key={page} className="px-2 text-gray-400">...</span>;
+                                            }
+                                            return null;
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={() => handlePageChange(currentPage + 1)}
+                                        disabled={!pagination.hasNextPage}
+                                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
                     </motion.div>
 
                     {/* Error Logs Section (Collapsible) */}

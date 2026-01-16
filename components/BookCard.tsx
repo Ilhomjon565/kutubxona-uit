@@ -5,7 +5,6 @@ import { Download, Eye, BookOpen } from 'lucide-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useState, memo, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface Book {
     _id: string;
@@ -97,23 +96,25 @@ const BookCard = memo(function BookCard({ book }: { book: Book }) {
             {/* Image Container with Parallax */}
             <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                 {!imageError ? (
-                    <Image
+                    <img
                         src={getImageUrl()}
                         alt={book.title}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-                        className="object-cover transition-transform duration-700 ease-out will-change-transform"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform"
                         style={{
                             transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                         }}
-                        onError={() => setImageError(true)}
+                        onError={(e) => {
+                            setImageError(true);
+                            (e.target as HTMLImageElement).src = '/logo.png';
+                        }}
                         loading="lazy"
-                        quality={85}
-                        unoptimized={book.image.startsWith('http') && !book.image.includes('api.kutubxona.uit.uz')}
                     />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
-                        <BookOpen className="w-16 h-16 text-gray-400" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0056b3]/10 to-[#00a8ff]/10">
+                        <div className="p-4 bg-white/80 rounded-full mb-3">
+                            <BookOpen className="w-12 h-12 text-[#0056b3]" />
+                        </div>
+                        <p className="text-xs text-gray-500 text-center px-4">Rasm yuklanmadi</p>
                     </div>
                 )}
                 
@@ -170,7 +171,11 @@ const BookCard = memo(function BookCard({ book }: { book: Book }) {
             {/* Content Section with 3D Effect */}
             <div className="p-5 flex flex-col flex-grow bg-gradient-to-b from-white to-gray-50/50" style={{ transform: "translateZ(20px)" }}>
                 <motion.h3 
-                    className="text-sm md:text-base font-bold text-gray-900 mb-3 line-clamp-2 leading-tight"
+                    className="text-ellipsis-2 font-bold text-gray-900 mb-3 leading-tight"
+                    style={{
+                        fontSize: 'clamp(0.7rem, 2vw, 0.875rem)',
+                        minHeight: '2.5em',
+                    }}
                     animate={{ color: isHovered ? '#0056b3' : '#111827' }}
                     transition={{ duration: 0.3 }}
                 >
