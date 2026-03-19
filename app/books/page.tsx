@@ -54,8 +54,8 @@ export default function BooksPage() {
 
   const fetchCategories = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-      const { data } = await axios.get(`${apiUrl}/api/books?limit=1`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+      const { data } = await axios.get(`${apiUrl}/books?limit=1`);
       if (data.categories) {
         setCategories(['Barchasi', ...data.categories]);
       }
@@ -67,7 +67,7 @@ export default function BooksPage() {
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
       const categoryParam = selectedCategory !== 'Barchasi' ? selectedCategory : '';
       const searchParam = search.trim();
       
@@ -79,7 +79,7 @@ export default function BooksPage() {
       if (categoryParam) params.append('category', categoryParam);
       if (searchParam) params.append('search', searchParam);
 
-      const { data } = await axios.get(`${apiUrl}/api/books?${params.toString()}`);
+      const { data } = await axios.get(`${apiUrl}/books?${params.toString()}`);
       
       if (data.pagination) {
         setBooks(data.books || []);

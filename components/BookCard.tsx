@@ -17,7 +17,7 @@ interface Book {
 }
 
 const BookCard = memo(function BookCard({ book }: { book: Book }) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
     const [isHovered, setIsHovered] = useState(false);
     const [imageError, setImageError] = useState(false);
     
@@ -34,7 +34,9 @@ const BookCard = memo(function BookCard({ book }: { book: Book }) {
         if (book.image.startsWith('http')) {
             return book.image;
         } else if (book.image.startsWith('/uploads')) {
-            return `${apiUrl}${book.image}`;
+            // Remove /api if it's there to avoid double /api when accessing static files
+            const baseServerUrl = apiUrl.replace(/\/api$/, '');
+            return `${baseServerUrl}${book.image}`;
         }
         return book.image;
     }, [book.image, apiUrl]);
@@ -43,7 +45,14 @@ const BookCard = memo(function BookCard({ book }: { book: Book }) {
         e.stopPropagation();
         e.preventDefault();
         try {
-            await axios.post(`${apiUrl}/api/books/${book._id}/download`);
+            const storedUser = localStorage.getItem('user');
+            const user = storedUser ? JSON.parse(storedUser) : null;
+            
+            await axios.post(`${apiUrl}/books/${book._id}/download`, {
+                studentId: user?.id,
+                fullName: user?.full_name,
+                student_id_number: user?.student_id_number
+            });
             window.open(book.downloadUrl, '_blank');
         } catch (error) {
             console.error('Error tracking download:', error);

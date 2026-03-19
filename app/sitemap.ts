@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kutubxona.uit.uz';
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrls: MetadataRoute.Sitemap = [
@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch all books for dynamic sitemap
-    const res = await fetch(`${apiUrl}/api/books`, {
+    const res = await fetch(`${apiUrl}/books`, {
       next: { revalidate: 3600 }, // Revalidate every hour
     });
     

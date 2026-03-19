@@ -31,17 +31,17 @@ export default function AdminLogin() {
         setLoading(true);
         
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
             const loginData = {
                 username,
                 password,
             };
 
-            console.log('Sending login request to:', `${apiUrl}/api/auth/login`);
+            console.log('Sending login request to:', `${apiUrl}/auth/login`);
             console.log('Login data:', { username, password: '***' });
 
             const { data } = await axios.post(
-                `${apiUrl}/api/auth/login`,
+                `${apiUrl}/auth/login`,
                 loginData,
                 {
                     headers: {

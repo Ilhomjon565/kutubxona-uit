@@ -8,7 +8,7 @@ import {
     Trash2, Edit, Plus, BookOpen, Eye, Download, 
     TrendingUp, AlertCircle, RefreshCw, Search,
     FileText, Calendar, BarChart3, Loader2,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, Database
 } from 'lucide-react';
 import AdminSidebar from '@/components/AdminSidebar';
 
@@ -41,8 +41,27 @@ export default function AdminDashboard() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<any>(null);
     const [allBooksForStats, setAllBooksForStats] = useState<Book[]>([]);
+    const [backingUp, setBackingUp] = useState(false);
     const itemsPerPage = 10;
     const router = useRouter();
+
+    const handleBackup = async () => {
+        if (backingUp) return;
+        setBackingUp(true);
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+            const token = localStorage.getItem('adminToken');
+            const { data } = await axios.get(`${apiUrl}/admin/backup-now`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(data.message || 'Backup muvaffaqiyatli yakunlandi');
+        } catch (err: any) {
+            console.error('Backup error:', err);
+            alert('Backupda xatolik yuz berdi: ' + (err.response?.data?.message || err.message));
+        } finally {
+            setBackingUp(false);
+        }
+    };
 
     // Error logging function
     const logError = (type: 'error' | 'warning' | 'info', message: string, details?: any) => {
@@ -89,8 +108,8 @@ export default function AdminDashboard() {
         setLoading(true);
         setError(null);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-            logError('info', 'Fetching books from API', { url: `${apiUrl}/api/books` });
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+            logError('info', 'Fetching books from API', { url: `${apiUrl}/books` });
             
             const params = new URLSearchParams({
                 page: currentPage.toString(),
@@ -100,39 +119,29 @@ export default function AdminDashboard() {
             if (searchQuery.trim()) {
                 params.append('search', searchQuery.trim());
             }
-            
-            const { data } = await axios.get(`${apiUrl}/api/books?${params.toString()}`, {
-                timeout: 10000,
-            });
+
+            const { data } = await axios.get(`${apiUrl}/books?${params.toString()}`);
             
             if (data.pagination) {
                 const booksData = data.books || [];
-                logError('info', `Successfully fetched ${booksData.length} books (page ${currentPage})`);
                 setBooks(booksData);
                 setFilteredBooks(booksData);
                 setPagination(data.pagination);
             } else {
+                // Fallback for old API format
                 const booksData = Array.isArray(data) ? data : (data.books || []);
-                logError('info', `Successfully fetched ${booksData.length} books`);
                 setBooks(booksData);
                 setFilteredBooks(booksData);
                 setPagination(null);
             }
-            setLoading(false);
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 
-                               error.message || 
-                               'Kitoblarni yuklashda xatolik yuz berdi';
             
-            logError('error', 'Failed to fetch books', {
-                error: errorMessage,
-                response: error.response,
-                request: error.request,
-                code: error.code,
-            });
-            
-            setError(errorMessage);
+            logError('info', 'Successfully fetched books', { count: (data.books || data).length });
+        } catch (err: any) {
+            logError('error', 'Failed to fetch books', err);
+            setError('Kitoblarni yuklashda xatolik yuz berdi');
+        } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -147,38 +156,23 @@ export default function AdminDashboard() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const deleteBook = async (id: string, title: string) => {
-        if (!confirm(`Haqiqatan ham "${title}" kitobni o'chirmoqchimisiz?`)) {
-            logError('info', 'Book deletion cancelled by user', { bookId: id, title });
-            return;
-        }
-        
-        try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-            const token = localStorage.getItem('adminToken');
-            
-            logError('info', 'Deleting book', { bookId: id, title });
-            
-            await axios.delete(`${apiUrl}/api/books/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                timeout: 10000,
-            });
-            
-            logError('info', 'Book deleted successfully', { bookId: id, title });
-            await fetchBooks();
-        } catch (error: any) {
-            const errorMessage = error.response?.data?.message || 
-                               error.message || 
-                               'Kitobni o\'chirishda xatolik yuz berdi';
-            
-            logError('error', 'Failed to delete book', {
-                bookId: id,
-                title,
-                error: errorMessage,
-                response: error.response,
-            });
-            
-            alert(`Xatolik: ${errorMessage}`);
+    const handleDelete = async (id: string) => {
+        if (window.confirm('Haqiqatan ham ushbu kitobni o\'chirmoqchimisiz?')) {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+                const token = localStorage.getItem('adminToken');
+                logError('info', `Deleting book: ${id}`);
+                
+                await axios.delete(`${apiUrl}/books/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                logError('info', `Successfully deleted book: ${id}`);
+                fetchBooks(); // Refresh list
+            } catch (err: any) {
+                logError('error', `Failed to delete book: ${id}`, err);
+                alert('Kitobni o\'chirishda xatolik yuz berdi');
+            }
         }
     };
 
@@ -186,8 +180,8 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchAllForStats = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-                const { data } = await axios.get(`${apiUrl}/api/books?limit=1000`);
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+                const { data } = await axios.get(`${apiUrl}/books?limit=1000`);
                 const booksData = Array.isArray(data) ? data : (data.books || []);
                 setAllBooksForStats(booksData);
             } catch (error) {
@@ -211,27 +205,22 @@ export default function AdminDashboard() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-                <AdminSidebar />
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center space-y-4"
-                    >
-                        <Loader2 className="w-12 h-12 text-[#0056b3] animate-spin mx-auto" />
-                        <p className="text-gray-600 font-medium">Ma'lumotlar yuklanmoqda...</p>
-                    </motion.div>
-                </div>
+            <div className="flex-1 flex flex-col items-center justify-center">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center space-y-4"
+                >
+                    <Loader2 className="w-12 h-12 text-[#0056b3] animate-spin mx-auto" />
+                    <p className="text-gray-600 font-medium">Ma'lumotlar yuklanmoqda...</p>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <AdminSidebar />
-            <div className="flex-1 p-6 lg:p-8 overflow-auto">
-                <div className="max-w-7xl mx-auto space-y-6">
+        <div className="p-6 lg:p-8 overflow-auto">
+            <div className="max-w-7xl mx-auto space-y-6">
                     {/* Header */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -242,18 +231,27 @@ export default function AdminDashboard() {
                             <h1 className="text-3xl font-bold text-gray-900">Boshqaruv Paneli</h1>
                             <p className="text-gray-500 mt-1">Kitoblarni boshqarish va monitoring</p>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                onClick={handleBackup}
+                                disabled={backingUp}
+                                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2 text-gray-700 disabled:opacity-50 shadow-sm"
+                                title="Hozirgi bazani backup qilish va Telegramga yuborish"
+                            >
+                                <Database className={`w-4 h-4 ${backingUp ? 'animate-pulse text-blue-500' : ''}`} />
+                                {backingUp ? 'Backup qilinmoqda...' : 'Backup'}
+                            </button>
                             <button
                                 onClick={handleRefresh}
                                 disabled={refreshing}
-                                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2 text-gray-700 disabled:opacity-50"
+                                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all flex items-center gap-2 text-gray-700 disabled:opacity-50 shadow-sm"
                             >
                                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                                 Yangilash
                             </button>
                             <button
                                 onClick={() => router.push('/admin/dashboard/create')}
-                                className="px-4 py-2 bg-gradient-to-r from-[#0056b3] to-[#00a8ff] text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-medium"
+                                className="px-4 py-2 bg-gradient-to-r from-[#0056b3] to-[#00a8ff] text-white rounded-xl hover:shadow-lg transition-all flex items-center gap-2 font-medium shadow-sm"
                             >
                                 <Plus className="w-4 h-4" />
                                 Yangi Kitob
@@ -482,7 +480,7 @@ export default function AdminDashboard() {
                                                             <Edit className="w-4 h-4" />
                                                         </button>
                                                         <button
-                                                            onClick={() => deleteBook(book._id, book.title)}
+                                                            onClick={() => handleDelete(book._id)}
                                                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                             title="O'chirish"
                                                         >
@@ -634,6 +632,5 @@ export default function AdminDashboard() {
                     )}
                 </div>
             </div>
-        </div>
-    );
+        );
 }

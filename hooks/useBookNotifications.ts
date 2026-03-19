@@ -39,8 +39,8 @@ export function useBookNotifications() {
   useEffect(() => {
     const initializeLastBook = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-        const { data } = await axios.get(`${apiUrl}/api/books?limit=1&page=1`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+        const { data } = await axios.get(`${apiUrl}/books?limit=1&page=1`);
         const books = Array.isArray(data) ? data : (data.books || []);
         if (books.length > 0 && books[0]._id) {
           setLastBookId(books[0]._id);
@@ -72,8 +72,8 @@ export function useBookNotifications() {
 
     const checkForNewBooks = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-        const { data } = await axios.get(`${apiUrl}/api/books?limit=1&page=1`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+        const { data } = await axios.get(`${apiUrl}/books?limit=1&page=1`);
         const books = Array.isArray(data) ? data : (data.books || []);
         
         if (books.length > 0) {
@@ -116,7 +116,7 @@ export function useBookNotifications() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://https://api.kutubxona.uit.uz';
     let imageUrl = '/logo.png'; // Default fallback
     
     // Try to get book image

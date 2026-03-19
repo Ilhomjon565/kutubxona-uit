@@ -1,11 +1,32 @@
 'use client';
 
-import { GraduationCap, Users, Globe, Award, Target, BookOpen, TrendingUp, ArrowLeft } from 'lucide-react';
+import { GraduationCap, Users, Globe, Award, Target, BookOpen, TrendingUp, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AboutPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const router = useRouter();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kutubxona.uit.uz';
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/');
+    } else {
+      setIsLoggedIn(true);
+    }
+  }, [router]);
+
+  if (isLoggedIn === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-[#0056b3] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>

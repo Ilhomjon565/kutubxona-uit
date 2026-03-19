@@ -2,227 +2,138 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import AdminSidebar from '@/components/AdminSidebar';
-import {
-    BarChart,
-    Bar,
-    LineChart,
-    Line,
-    PieChart,
-    Pie,
-    Cell,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
+import { 
+    Users, 
+    BookOpen, 
+    Download, 
+    TrendingUp,
+    Calendar,
+    ArrowUpRight
+} from 'lucide-react';
+import { 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
     ResponsiveContainer,
+    AreaChart,
+    Area
 } from 'recharts';
 
-interface Book {
-    _id: string;
-    title: string;
-    category: string;
-    views: number;
-    downloads: number;
-}
-
-const COLORS = ['#0056b3', '#00a8ff', '#004494', '#0088cc', '#0066aa'];
-
 export default function AnalyticsPage() {
-    const [books, setBooks] = useState<Book[]>([]);
+    const [analytics, setAnalytics] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const router = useRouter();
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
 
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-            router.push('/admin');
-            return;
-        }
-        fetchBooks();
-    }, [router]);
+        fetchAnalytics();
+    }, []);
 
-    const fetchBooks = async () => {
+    const fetchAnalytics = async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-            const { data } = await axios.get(`${apiUrl}/api/books?limit=1000`);
-            // Handle pagination response
-            const booksData = Array.isArray(data) ? data : (data.books || []);
-            setBooks(booksData);
+            const token = localStorage.getItem('adminToken');
+            const { data } = await axios.get(`${apiUrl}/auth/student-analytics`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAnalytics(data);
             setLoading(false);
         } catch (error) {
-            console.error('Error fetching books:', error);
+            console.error('Error fetching analytics:', error);
             setLoading(false);
         }
     };
 
-    // Prepare data for charts
-    const categoryData = () => {
-        if (!Array.isArray(books) || books.length === 0) {
-            return [];
-        }
-        
-        const categoryMap: { [key: string]: { views: number; downloads: number; count: number } } = {};
-        
-        books.forEach((book) => {
-            if (!book || !book.category) return;
-            if (!categoryMap[book.category]) {
-                categoryMap[book.category] = { views: 0, downloads: 0, count: 0 };
-            }
-            categoryMap[book.category].views += book.views || 0;
-            categoryMap[book.category].downloads += book.downloads || 0;
-            categoryMap[book.category].count += 1;
-        });
-
-        return Object.entries(categoryMap).map(([category, data]) => ({
-            name: category,
-            views: data.views,
-            downloads: data.downloads,
-            count: data.count,
-        }));
-    };
-
-    const topBooksData = () => {
-        if (!Array.isArray(books) || books.length === 0) {
-            return [];
-        }
-        return [...books]
-            .filter(book => book && book.title)
-            .sort((a, b) => ((b.views || 0) + (b.downloads || 0)) - ((a.views || 0) + (a.downloads || 0)))
-            .slice(0, 10)
-            .map((book) => ({
-                name: book.title.length > 20 ? book.title.substring(0, 20) + '...' : book.title,
-                views: book.views || 0,
-                downloads: book.downloads || 0,
-            }));
-    };
-
-    const pieChartData = () => {
-        return categoryData().map((item) => ({
-            name: item.name,
-            value: item.count,
-        }));
-    };
-
-    const totalViews = Array.isArray(books) ? books.reduce((acc, book) => acc + (book.views || 0), 0) : 0;
-    const totalDownloads = Array.isArray(books) ? books.reduce((acc, book) => acc + (book.downloads || 0), 0) : 0;
-    const totalBooks = Array.isArray(books) ? books.length : 0;
-
-    if (loading) {
-        return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1 flex justify-center items-center text-[#0056b3]">
-                    Yuklanmoqda...
-                </div>
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0056b3]"></div>
+        </div>
+    );
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1 p-8">
-                <div className="max-w-7xl mx-auto">
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-[#0056b3]">Analizlar</h1>
-                        <p className="text-gray-500 mt-2">Kitoblar statistikasi va tahlillari</p>
+        <div className="space-y-8 p-6 lg:p-10">
+            <div>
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Analizlar</h1>
+                <p className="text-gray-500 font-medium">Kutubxona faoliyati tahlili</p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-xl transition-all">
+                    <div>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Talabalar</p>
+                        <h3 className="text-4xl font-black text-gray-900">{analytics?.totalStudents || 0}</h3>
+                        <p className="text-xs text-green-600 font-bold mt-2 flex items-center gap-1">
+                            <ArrowUpRight className="w-3 h-3" /> Faol talabalar
+                        </p>
                     </div>
-
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                            <h3 className="text-gray-500 text-sm font-medium">Jami Kitoblar</h3>
-                            <p className="text-4xl font-bold text-[#0056b3] mt-2">{totalBooks}</p>
-                        </div>
-                        <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                            <h3 className="text-gray-500 text-sm font-medium">Jami Ko'rishlar</h3>
-                            <p className="text-4xl font-bold text-[#0056b3] mt-2">{totalViews.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                            <h3 className="text-gray-500 text-sm font-medium">Jami Yuklab Olishlar</h3>
-                            <p className="text-4xl font-bold text-[#0056b3] mt-2">{totalDownloads.toLocaleString()}</p>
-                        </div>
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                        <Users className="w-8 h-8" />
                     </div>
+                </div>
 
-                    {/* Charts Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        {/* Category Bar Chart */}
-                        <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                                Kategoriyalar bo'yicha Ko'rishlar va Yuklab Olishlar
-                            </h2>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={categoryData()}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="views" fill="#0056b3" name="Ko'rishlar" />
-                                    <Bar dataKey="downloads" fill="#00a8ff" name="Yuklab Olishlar" />
-                                </BarChart>
-                            </ResponsiveContainer>
+                {/* Additional Stats can be added here */}
+            </div>
+
+            {/* Chart Section */}
+            <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                            <TrendingUp className="w-6 h-6" />
                         </div>
-
-                        {/* Category Pie Chart */}
-                        <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                                Kategoriyalar bo'yicha Kitoblar Taqsimoti
-                            </h2>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={pieChartData()}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {pieChartData().map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <div>
+                            <h3 className="text-xl font-black text-gray-900">Faollik grafigi</h3>
+                            <p className="text-sm text-gray-500">Oxirgi 7 kunlik tahlil</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Top Books Line Chart */}
-                    <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                            Eng Mashhur 10 Kitob
-                        </h2>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <LineChart data={topBooksData()}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Line
-                                    type="monotone"
-                                    dataKey="views"
-                                    stroke="#0056b3"
-                                    strokeWidth={2}
-                                    name="Ko'rishlar"
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="downloads"
-                                    stroke="#00a8ff"
-                                    strokeWidth={2}
-                                    name="Yuklab Olishlar"
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
+                <div className="h-[400px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={analytics?.chartData || []}>
+                            <defs>
+                                <linearGradient id="colorLogins" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#0056b3" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#0056b3" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                            <XAxis 
+                                dataKey="_id" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}}
+                                dy={10}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{fill: '#9ca3af', fontSize: 12, fontWeight: 600}}
+                            />
+                            <Tooltip 
+                                contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="logins" 
+                                stroke="#0056b3" 
+                                strokeWidth={4}
+                                fillOpacity={1} 
+                                fill="url(#colorLogins)" 
+                                name="Kirishlar"
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="downloads" 
+                                stroke="#10b981" 
+                                strokeWidth={4}
+                                fillOpacity={0} 
+                                name="Yuklashlar"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>

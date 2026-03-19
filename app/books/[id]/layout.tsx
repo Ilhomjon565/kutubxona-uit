@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kutubxona.uit.uz';
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   try {
-    const res = await fetch(`${apiUrl}/api/books/${params.id}`, {
+    const res = await fetch(`${apiUrl}/books/${params.id}`, {
       cache: 'no-store',
     });
     
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     const imageUrl = book.image?.startsWith('http') 
       ? book.image 
       : book.image?.startsWith('/uploads')
-      ? `${apiUrl}${book.image}`
+      ? `${apiUrl.replace(/\/api$/, '')}${book.image}`
       : `${siteUrl}/logo.png`;
 
     return {

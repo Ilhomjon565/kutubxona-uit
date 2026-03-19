@@ -35,9 +35,9 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
             const token = localStorage.getItem('adminToken');
-            const { data } = await axios.get(`${apiUrl}/api/auth/profile`, {
+            const { data } = await axios.get(`${apiUrl}/auth/profile`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setProfile(data);
@@ -54,7 +54,7 @@ export default function ProfilePage() {
         setMessage(null);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
             const token = localStorage.getItem('adminToken');
 
             // Prepare update data
@@ -68,7 +68,7 @@ export default function ProfilePage() {
                 updateData.newPassword = data.newPassword;
             }
 
-            const response = await axios.put(`${apiUrl}/api/auth/profile`, updateData, {
+            const response = await axios.put(`${apiUrl}/auth/profile`, updateData, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -94,20 +94,15 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-gray-50">
-                <AdminSidebar />
-                <div className="flex-1 flex justify-center items-center text-[#0056b3]">
-                    Yuklanmoqda...
-                </div>
+            <div className="flex-1 flex justify-center items-center text-[#0056b3]">
+                Yuklanmoqda...
             </div>
         );
     }
 
     return (
-        <div className="flex min-h-screen bg-gray-50">
-            <AdminSidebar />
-            <div className="flex-1 p-8">
-                <div className="max-w-2xl mx-auto">
+        <div className="p-8">
+            <div className="max-w-2xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-[#0056b3]">Profil Sozlamalari</h1>
                         <p className="text-gray-500 mt-2">Profil ma'lumotlarini yangilash</p>
@@ -240,7 +235,6 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
-        </div>
     );
 }
 

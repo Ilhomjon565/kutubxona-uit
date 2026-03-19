@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'api.kutubxona.uit.uz',
+        hostname: 'https://api.kutubxona.uit.uz',
         pathname: '/uploads/**',
       },
       {

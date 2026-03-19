@@ -28,24 +28,30 @@ export default function BookDetailPage() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kutubxona.uit.uz';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
     if (params.id) {
       fetchBook();
       trackView();
     }
-  }, [params.id]);
+  }, [params.id, router]);
 
   const fetchBook = async () => {
     try {
-      const { data } = await axios.get(`${apiUrl}/api/books/${params.id}`);
+      const { data } = await axios.get(`${apiUrl}/books/${params.id}`);
       setBook(data);
       
       // Fetch related books
-      const allBooks = await axios.get(`${apiUrl}/api/books`);
-      const related = allBooks.data
+      const allBooks = await axios.get(`${apiUrl}/books`);
+      const related = (Array.isArray(allBooks.data) ? allBooks.data : allBooks.data.books || [])
         .filter((b: Book) => b._id !== data._id && b.category === data.category)
         .slice(0, 5);
       setRelatedBooks(related);
@@ -59,7 +65,7 @@ export default function BookDetailPage() {
 
   const trackView = async () => {
     try {
-      await axios.post(`${apiUrl}/api/books/${params.id}/view`);
+      await axios.post(`${apiUrl}/books/${params.id}/view`);
     } catch (error) {
       console.error('Error tracking view:', error);
     }
@@ -67,7 +73,7 @@ export default function BookDetailPage() {
 
   const handleDownload = async () => {
     try {
-      await axios.post(`${apiUrl}/api/books/${params.id}/download`);
+      await axios.post(`${apiUrl}/books/${params.id}/download`);
       window.open(book?.downloadUrl, '_blank');
     } catch (error) {
       console.error('Error tracking download:', error);

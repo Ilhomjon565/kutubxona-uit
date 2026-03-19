@@ -26,11 +26,12 @@ export default function BookForm({ initialData, isEdit = false }: BookFormProps)
     // Get initial image preview URL
     const getInitialImagePreview = () => {
         if (!initialData?.image) return null;
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
         if (initialData.image.startsWith('http')) {
             return initialData.image;
         } else if (initialData.image.startsWith('/uploads')) {
-            return `${apiUrl}${initialData.image}`;
+            const baseServerUrl = apiUrl.replace(/\/api$/, '');
+            return `${baseServerUrl}${initialData.image}`;
         }
         return initialData.image;
     };
@@ -58,7 +59,7 @@ export default function BookForm({ initialData, isEdit = false }: BookFormProps)
     const onSubmit = async (data: any) => {
         setLoading(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
             const token = localStorage.getItem('adminToken');
             
             const formData = new FormData();
@@ -79,9 +80,9 @@ export default function BookForm({ initialData, isEdit = false }: BookFormProps)
 
             let response;
             if (isEdit) {
-                response = await axios.put(`${apiUrl}/api/books/${initialData._id}`, formData, config);
+                response = await axios.put(`${apiUrl}/books/${initialData._id}`, formData, config);
             } else {
-                response = await axios.post(`${apiUrl}/api/books`, formData, config);
+                response = await axios.post(`${apiUrl}/books`, formData, config);
             }
             
             console.log('Book saved successfully:', response.data);
