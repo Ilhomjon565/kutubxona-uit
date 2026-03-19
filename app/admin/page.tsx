@@ -19,7 +19,7 @@ export default function AdminLogin() {
             document.head.removeChild(metaRobots);
         };
     }, []);
-    const [username, setUsername] = useState('');
+    const [login, setLogin] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,12 +33,12 @@ export default function AdminLogin() {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
             const loginData = {
-                username,
+                login,
                 password,
             };
 
-            console.log('Sending login request to:', `${apiUrl}/auth/login`);
-            console.log('Login data:', { username, password: '***' });
+            console.log('Sending admin login request to:', `${apiUrl}/auth/login`);
+            console.log('Login data:', { login, password: '***' });
 
             const { data } = await axios.post(
                 `${apiUrl}/auth/login`,
@@ -120,16 +120,16 @@ export default function AdminLogin() {
                             transition={{ delay: 0.2 }}
                         >
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Foydalanuvchi nomi
+                                Login
                             </label>
                             <div className="relative">
                                 <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                                 <input
                                     type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    value={login}
+                                    onChange={(e) => setLogin(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3.5 bg-gray-50/80 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0056b3]/20 focus:border-[#0056b3] text-gray-900 transition-all placeholder-gray-400"
-                                    placeholder="Foydalanuvchi nomini kiriting"
+                                    placeholder="Loginni kiriting"
                                     required
                                     disabled={loading}
                                 />
