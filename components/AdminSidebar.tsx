@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, BarChart3, User, BookOpen, LogOut, ShieldCheck, PlusCircle, Settings } from 'lucide-react';
+import { LayoutDashboard, BarChart3, User, BookOpen, LogOut, ShieldCheck, PlusCircle, Settings, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 interface SidebarItem {
@@ -36,8 +36,13 @@ export default function AdminSidebar() {
             path: '/admin/profile',
         },
         {
+            name: '2FA Boshqaruvi',
+            icon: <ShieldCheck className="w-5 h-5 text-blue-500" />,
+            path: '/admin/2fa-management',
+        },
+        {
             name: 'Bloklanganlar',
-            icon: <ShieldCheck className="w-5 h-5 text-red-500" />,
+            icon: <ShieldAlert className="w-5 h-5 text-red-500" />,
             path: '/admin/blocked',
         },
     ];
