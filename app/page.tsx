@@ -48,6 +48,8 @@ export default function Home() {
   const [loginError, setLoginError] = useState('');
   const [isWaiting2FA, setIsWaiting2FA] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [needs2FASetup, setNeeds2FASetup] = useState(false);
+  const [referralLink, setReferralLink] = useState('');
   const itemsPerPage = 10;
   const hasTrackedViews = useRef(false);
   
@@ -86,18 +88,28 @@ export default function Home() {
           if (data.status === 'approved') {
             clearInterval(interval);
             localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            setIsLoggedIn(true);
-            setUser(data.user);
-            setIsWaiting2FA(false);
-            setRequestId(null);
-            fetchBooks();
-            fetchAllBooks();
+            
+            if (data.user) {
+              localStorage.setItem('user', JSON.stringify(data.user));
+              setIsLoggedIn(true);
+              setUser(data.user);
+              setIsWaiting2FA(false);
+              setRequestId(null); // Clear request ID
+              fetchBooks();
+              fetchAllBooks();
+            } else {
+              // If no user data (e.g. HEMIS down), but token exists, try to continue
+              setIsLoggedIn(true);
+              setIsWaiting2FA(false);
+              setRequestId(null);
+              fetchBooks();
+              fetchAllBooks();
+            }
           } else if (data.status === 'blocked') {
             clearInterval(interval);
             setIsWaiting2FA(false);
-            setRequestId(null);
-            setLoginError('Sizning so\'rovingiz rad etildi va ushbu qurilma bloklandi!');
+            setRequestId(null); // Clear request ID
+            setLoginError('Sizning kirish so\'rovingiz rad etildi va qurilmangiz bloklandi!');
             localStorage.setItem('isDeviceBlocked', 'true');
           }
         } catch (error) {
@@ -124,10 +136,14 @@ export default function Home() {
         deviceInfo
       });
 
-      if (response.data.two_factor) {
+      if (response.data.needs_2fa_setup) {
+        setNeeds2FASetup(true);
+        setReferralLink(response.data.referralLink);
+        setLoading(false);
+      } else if (response.data.two_factor) {
         setIsWaiting2FA(true);
         setRequestId(response.data.requestId);
-        setLoginError('');
+        setLoading(false);
       } else if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -137,6 +153,7 @@ export default function Home() {
         fetchAllBooks();
       } else {
         setLoginError(response.data.message || 'Login xatosi');
+        setLoading(false);
       }
     } catch (err: any) {
       if (err.response?.data?.blocked) {
@@ -441,16 +458,42 @@ export default function Home() {
                 </div>
               </div>
               <h2 className="text-3xl font-black text-[#0f172a] tracking-tight">
-                {isWaiting2FA ? 'Tasdiqlash kutilmoqda' : 'Xush kelibsiz!'}
+                {needs2FASetup ? '2FA Himoyasi' : isWaiting2FA ? 'Tasdiqlash kutilmoqda' : 'Xush kelibsiz!'}
               </h2>
               <p className="mt-3 text-sm text-gray-500 font-medium">
-                {isWaiting2FA 
+                {needs2FASetup 
+                  ? 'Hisobingizni xavfsizligini ta\'minlash uchun Telegram boti orqali 2FA ni yoqing.'
+                  : isWaiting2FA 
                   ? 'Kirish so\'rovi Telegram guruhga yuborildi. Iltimos, admin tasdiqlashini kuting.' 
                   : 'Kutubxonadan foydalanish uchun HEMIS login parolingiz orqali kiring'}
               </p>
             </div>
 
-            {isWaiting2FA ? (
+            {needs2FASetup ? (
+              <div className="mt-10 space-y-6 text-center">
+                <div className="relative flex justify-center mb-4">
+                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-2xl" />
+                  <div className="relative w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                    <Bell className="w-10 h-10 text-blue-600" />
+                  </div>
+                </div>
+                <a 
+                  href={referralLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 w-full py-4 px-6 bg-[#0088cc] text-white rounded-2xl font-black shadow-lg shadow-[#0088cc]/30 hover:shadow-xl hover:shadow-[#0088cc]/40 transition-all hover:-translate-y-1 active:scale-95"
+                >
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.35-.01-1.02-.2-1.52-.37-.62-.2-1.11-.31-1.07-.65.02-.18.27-.36.75-.55 2.94-1.28 4.91-2.12 5.89-2.52 2.81-1.15 3.39-1.35 3.77-1.35.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                  Telegramda yoqish
+                </a>
+                <button 
+                  onClick={() => setNeeds2FASetup(false)}
+                  className="text-sm text-gray-400 font-bold hover:text-gray-600 transition-colors"
+                >
+                  Orqaga qaytish
+                </button>
+              </div>
+            ) : isWaiting2FA ? (
               <div className="mt-10 flex flex-col items-center space-y-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl animate-pulse" />

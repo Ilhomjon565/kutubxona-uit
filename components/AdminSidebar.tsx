@@ -35,6 +35,11 @@ export default function AdminSidebar() {
             icon: <User className="w-5 h-5" />,
             path: '/admin/profile',
         },
+        {
+            name: 'Bloklanganlar',
+            icon: <ShieldCheck className="w-5 h-5 text-red-500" />,
+            path: '/admin/blocked',
+        },
     ];
 
     const handleLogout = () => {
