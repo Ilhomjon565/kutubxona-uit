@@ -42,6 +42,7 @@ export default function AdminDashboard() {
     const [pagination, setPagination] = useState<any>(null);
     const [allBooksForStats, setAllBooksForStats] = useState<Book[]>([]);
     const [backingUp, setBackingUp] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState(false);
     const itemsPerPage = 10;
     const router = useRouter();
 
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
     // Error logging function
     const logError = (type: 'error' | 'warning' | 'info', message: string, details?: any) => {
         const log: ErrorLog = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             timestamp: new Date(),
             type,
             message,
@@ -97,12 +98,13 @@ export default function AdminDashboard() {
             router.push('/admin');
             return;
         }
-        fetchBooks();
+        setIsAuthorized(true);
     }, [router]);
 
     useEffect(() => {
+        if (!isAuthorized) return;
         fetchBooks();
-    }, [currentPage, searchQuery]);
+    }, [currentPage, searchQuery, isAuthorized]);
 
     const fetchBooks = async () => {
         setLoading(true);

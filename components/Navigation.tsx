@@ -16,7 +16,13 @@ export default function Navigation() {
 
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Invalid user JSON in localStorage:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
 
     window.addEventListener('scroll', handleScroll);

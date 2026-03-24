@@ -52,6 +52,7 @@ export default function Home() {
   const [referralLink, setReferralLink] = useState('');
   const itemsPerPage = 10;
   const hasTrackedViews = useRef(false);
+  useBookNotifications();
   
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.kutubxona.uit.uz/api';
@@ -68,7 +69,17 @@ export default function Home() {
     const storedUser = localStorage.getItem('user');
     if (token && storedUser) {
       setIsLoggedIn(true);
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Invalid user JSON in localStorage:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsLoggedIn(false);
+        setLoading(false);
+        return;
+      }
       fetchBooks();
       fetchAllBooks();
     } else {

@@ -32,7 +32,14 @@ export default function ProfilePage() {
       router.push('/');
       return;
     }
-    setUser(JSON.parse(storedUser));
+    try {
+      setUser(JSON.parse(storedUser));
+    } catch (error) {
+      console.error('Invalid user JSON in localStorage:', error);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      router.push('/');
+    }
   }, [router]);
 
   const handleLogout = () => {

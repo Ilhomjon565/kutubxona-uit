@@ -46,7 +46,16 @@ const BookCard = memo(function BookCard({ book }: { book: Book }) {
         e.preventDefault();
         try {
             const storedUser = localStorage.getItem('user');
-            const user = storedUser ? JSON.parse(storedUser) : null;
+            let user = null;
+            if (storedUser) {
+                try {
+                    user = JSON.parse(storedUser);
+                } catch (error) {
+                    console.error('Invalid user JSON in localStorage:', error);
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            }
             
             await axios.post(`${apiUrl}/books/${book._id}/download`, {
                 studentId: user?.id,
